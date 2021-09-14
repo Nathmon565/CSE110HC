@@ -1,18 +1,31 @@
+import java.util.Random;
+import java.util.Scanner;
+
 class CSE110HC {
-  /** Contains an [x][y] array of Rooms representing the current dungeon */
+  public static CSE110HC singleton;
+  /** Contains an [y][x] array of Rooms representing the current dungeon */
   private Room[][] dungeonFloor;
   /** Represents the player's position */
   private Vector2 position;
   // Favors
   /** Protects the player for one damage */
-  private bool secondWind = false;
+  private boolean secondWind = false;
   /** Allows unlocking a door without the key */
-  private bool skeletonKey = false;
+  private boolean skeletonKey = false;
   /** Starts the floor with the layout revealed */
-  private bool dungeonMap = false;
+  private boolean dungeonMap = false;
 
   public static void main(String[] args) {
-    // This is where the bulk of the game code is
+    singleton = new CSE110HC();
+    singleton.Run();
+  }
+
+  /** Runs the main program */
+  private void Run() {
+    // CreateDungeon(4, 4);
+    // GenerateDungeon(1);
+    // RevealFloor();
+    // PrintKnownMap();
   }
 
   /**
@@ -22,7 +35,19 @@ class CSE110HC {
    * @param height Number of rooms high
    */
   private void CreateDungeon(int width, int height) {
+    dungeonFloor = new Room[height][width];
+  }
 
+  /**
+   * Fills the rooms of the dungeon
+   */
+  private void GenerateDungeon(int difficulty) {
+    Random r = new Random();
+    for (int x = 0; x < dungeonFloor[0].length; x++) {
+      for (int y = 0; y < dungeonFloor.length; y++) {
+        dungeonFloor[y][x] = new Room(new Vector2(x, y), r.nextBoolean());
+      }
+    }
   }
 
   /**
@@ -39,10 +64,27 @@ class CSE110HC {
   private void PrintKnownMap() {
     String floor = "";
     for (Room[] row : dungeonFloor) {
-      for (Room room : dungeonFloor) {
+      for (Room room : row) {
+        if (room == null) {
+          floor += "?";
+          continue;
+        }
         floor += room.OnMap();
       }
       floor += "\n";
+    }
+    print(floor, 0.01);
+  }
+
+  private void RevealFloor() {
+    for (Room[] row : dungeonFloor) {
+      for (Room room : row) {
+        if (room == null) {
+          continue;
+        }
+        room.RevealRoom();
+        ;
+      }
     }
   }
 
@@ -59,13 +101,88 @@ class CSE110HC {
    * @param direction 0 - up, 1 - right, 2 - down, 3 - left
    * @return Whether the move was valid or not
    */
-  private bool MoveRooms(int direction) {
+  private boolean MoveRooms(int direction) {
     // Attempts to move in a direction
-    bool legalMove = true; // can we move there?
+    boolean legalMove = true; // can we move there?
     // actually move
     // update visual rooms
     // enter room
     return legalMove;
+  }
+
+  /**
+   * Prints a message to the console.
+   * 
+   * @param msg The message to be printed
+   */
+  public static void print(String msg) {
+    print(msg, 1);
+  }
+
+  /**
+   * Prints a message to the console.
+   * 
+   * @param msg     The message to be printed
+   * @param newLine Whether it ends the print statement with a new line character
+   */
+  public static void print(String msg, boolean newLine) {
+    print(msg, 1, newLine);
+  }
+
+  /**
+   * Prints a message to the console.
+   * 
+   * @param msg      The message to be printed
+   * @param speedMod A percent modifier for the character delays.
+   */
+  public static void print(String msg, double speedMod) {
+    print(msg, speedMod, true);
+  }
+
+  /**
+   * Prints a message to the console.
+   * 
+   * @param msg      The message to be printed
+   * @param speedMod A percent modifier for the character delays.
+   * @param newLine  Whether it ends the print statement with a new line character
+   */
+  public static void print(String msg, double speedMod, boolean newLine) {
+    for (char c : msg.toCharArray()) {
+      System.out.print(c);
+      double delay = 0.03;
+      switch (c) {
+        case ',', '/', '\\', '(', ')', '{', '}', '[', ']', '-', '+':
+          delay += 0.1;
+          break;
+        case '.', ':', ';', '|', '<', '>':
+          delay += 0.2;
+          break;
+        case '!', '=':
+          delay += 0.25;
+          break;
+        case '?':
+          delay += 0.3;
+          break;
+      }
+      delay *= speedMod;
+      wait((int) (delay * 1000));
+    }
+    if (newLine) {
+      System.out.println("");
+    }
+  }
+
+  /**
+   * Causes a delay in the program execution
+   * 
+   * @param ms The number of miliseconds to be delayed for
+   */
+  public static void wait(int ms) {
+    try {
+      Thread.sleep(ms);
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+    }
   }
 }
 
@@ -103,7 +220,7 @@ class Entity {
   /**
    * Called upon this entity reaching 0 health
    */
-  private void Die() {
+  protected void Die() {
     return;
   }
 }
@@ -115,7 +232,7 @@ class Entity {
 class Enemy extends Entity {
   /** The difficulty rating of the enemy's challenge */
   private int strength;
-  private string name;
+  private String name;
 
   /**
    * Creates an enemy with set stats
@@ -124,7 +241,7 @@ class Enemy extends Entity {
    * @param strength The difficulty of the enemy
    */
   public Enemy(int health, int strength) {
-    super(health, strength);
+    super(health);
     this.strength = strength;
     // Generate a random name and other fun stuff
   }
@@ -141,10 +258,11 @@ class Enemy extends Entity {
    * Prints the stats and other information about the enemy to the console.
    */
   public void PrintEnemy() {
-    // Prints the stats of the enemy
+    CSE110HC.print(name + ", " + strength);
   }
 
-  private override Die() {
+  @Override
+  protected void Die() {
     Player.AddScore(strength);
   }
 }
@@ -154,18 +272,19 @@ class Enemy extends Entity {
  * "inside"
  */
 class Room {
+  private boolean visitable = false;
   /** The enemy present in the room */
   private Enemy enemy;
   /** The coordinates of this room on the floor */
   private Vector2 coordinates;
   /** Whether the room is revealed on the map */
-  private bool discovered = false;
+  private boolean discovered = false;
   /** Whether the room contains the key */
-  private bool hasKey = false;
+  private boolean hasKey = false;
   /** Whether the room has the locked door */
-  private bool isDoor = false;
+  private boolean isDoor = false;
   /** Whether the room has been visited */
-  private bool visited = false;
+  private boolean visited = false;
 
   /**
    * Creates an empty room
@@ -174,7 +293,7 @@ class Room {
    *                    dungeon
    */
   public Room(Vector2 coordinates) {
-    Room(coordinates, false, false);
+    this(coordinates, false, false, false);
   }
 
   /**
@@ -182,10 +301,22 @@ class Room {
    * 
    * @param coordinates The coordinates associated to the room's position in the
    *                    dungeon
+   * @param visitable   Whether the room is accessable at all
+   */
+  public Room(Vector2 coordinates, boolean visitable) {
+    this(coordinates, visitable, false, false);
+  }
+
+  /**
+   * Creates a room with a key
+   * 
+   * @param coordinates The coordinates associated to the room's position in the
+   *                    dungeon
+   * @param visitable   Whether the room is accessable at all
    * @param hasKey      Whether the room has a key or not
    */
-  public Room(Vector2 coordinates, bool hasKey) {
-    Room(coordinates, hasKey, false);
+  public Room(Vector2 coordinates, boolean visitable, boolean hasKey) {
+    this(coordinates, visitable, hasKey, false);
   }
 
   /**
@@ -193,10 +324,12 @@ class Room {
    * 
    * @param coordinates The coordinates associated to the room's position in the
    *                    dungeon
+   * @param visitable   Whether the room is accessable at all
    * @param hasKey      Whether the room has a key or not
    * @param isDoor      Whether the room is a locked door
    */
-  public Room(Vector2 coordinates, bool hasKey, bool isDoor) {
+  public Room(Vector2 coordinates, boolean visitable, boolean hasKey, boolean isDoor) {
+    this.visitable = visitable;
     this.coordinates = coordinates;
     this.hasKey = hasKey;
     this.isDoor = isDoor;
@@ -210,26 +343,37 @@ class Room {
     return enemy;
   }
 
-  public bool HasKey() {
+  public boolean HasKey() {
     return hasKey;
   }
 
-  public bool isDoor() {
+  public boolean IsDoor() {
     return isDoor;
   }
 
-  public bool isVisited() {
+  public boolean IsVisited() {
     return visited;
   }
 
-  public bool IsDiscovered() {
+  public boolean IsDiscovered() {
     return discovered;
+  }
+
+  public boolean IsVisitable() {
+    return visitable;
+  }
+
+  public Vector2 GetCoordinates() {
+    return coordinates;
   }
 
   /**
    * @return The character representation of a room based on its status
    */
   public String OnMap() {
+    if (!visitable) {
+      return " ";
+    }
     if (discovered) {
       if (hasKey) {
         return "%";
@@ -280,7 +424,10 @@ class Player extends Entity {
 
   /** Keeps track of how much progress the player has made */
   private int score = 0;
-  /** Currency which can be exchanged for temporary upgrades that help the player on the next floor */
+  /**
+   * Currency which can be exchanged for temporary upgrades that help the player
+   * on the next floor
+   */
   private int favors = 0;
 
   /**
@@ -317,7 +464,7 @@ class Player extends Entity {
   /**
    * Ends the game and prints out the stats
    */
-  private void Die() {
+  protected void Die() {
 
   }
 }
