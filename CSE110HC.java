@@ -14,6 +14,7 @@ class CSE110HC {
   private boolean skeletonKey = false;
   /** Starts the floor with the layout revealed */
   private boolean dungeonMap = false;
+  private Scanner scanner;
 
   public static void main(String[] args) {
     singleton = new CSE110HC();
@@ -22,6 +23,7 @@ class CSE110HC {
 
   /** Runs the main program */
   private void Run() {
+    scanner = new Scanner(System.in);
     // CreateDungeon(4, 4);
     // GenerateDungeon(1);
     // RevealFloor();
@@ -165,10 +167,64 @@ class CSE110HC {
           break;
       }
       delay *= speedMod;
-      wait((int) (delay * 1000));
+      WaitForMS((int) (delay * 1000));
     }
     if (newLine) {
       System.out.println("");
+    }
+  }
+
+  /**
+   * Asks for the user to input a valid integer. Will keep asking until provided.
+   * 
+   * @return The valid number inputted by the user.
+   */
+  private int IntInput() {
+    return IntInput(Integer.MIN_VALUE, Integer.MAX_VALUE);
+  }
+
+  /**
+   * Asks for the user to input a valid integer between min and max. Will keep
+   * asking until provided.
+   * 
+   * @param min The minmium value the user is allowed to enter (inclusive)
+   * @param max The maximum value the user is allowed to enter (inclusive)
+   * @return The valid number inputted by the user,
+   */
+  private int IntInput(int min, int max) {
+    int r;
+    while (true) {
+      try {
+        r = Integer.parseInt(scanner.nextLine());
+        if (r >= min && r <= max) {
+          return r;
+        } else {
+          throw new Exception();
+        }
+      } catch (Exception e) {
+        boolean lowerBounds = min > Integer.MIN_VALUE;
+        boolean upperBounds = max < Integer.MAX_VALUE;
+        if (lowerBounds && upperBounds) {
+          print("Enter a valid integer between " + min + " and " + max);
+        } else if (lowerBounds) {
+          print("Enter a valid integer above " + min);
+        } else if (upperBounds) {
+          print("Enter a valid integer below " + max);
+        } else {
+          print("Enter a valid integer");
+        }
+      }
+    }
+  }
+
+  /**
+   * Waits until the user presses enter.
+   */
+  public void WaitForEnter() {
+    System.out.println("Press Enter to continue");
+    try {
+      System.in.read();
+    } catch (Exception e) {
     }
   }
 
@@ -177,7 +233,7 @@ class CSE110HC {
    * 
    * @param ms The number of miliseconds to be delayed for
    */
-  public static void wait(int ms) {
+  public static void WaitForMS(int ms) {
     try {
       Thread.sleep(ms);
     } catch (InterruptedException ex) {
