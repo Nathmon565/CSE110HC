@@ -9,8 +9,6 @@ class CSE110HC {
   public static CSE110HC singleton;
   /** Contains an [y][x] array of Rooms representing the current dungeon */
   private Room[][] dungeonFloor;
-  /** Represents the player's position */
-  private Vector2 position;
   // Favors
   /** Protects the player for one damage */
   private boolean secondWind = false;
@@ -33,23 +31,14 @@ class CSE110HC {
   /** Runs the main program */
   private void Run() {
     scanner = new Scanner(System.in);
-    // CreateDungeon(4, 4);
-    // GenerateDungeon(1);
-    // RevealFloor();
-    // PrintKnownMap();
-    print("Enter a budget: ", false);
-    int budget = IntInput(1, 10);
-    int r = new Random().nextInt(3);
-    switch (r) {
-      case 0:
-        ChallengeCopy(budget);
-        break;
-      case 1:
-        ChallengeScramble(budget);
-        break;
-      case 2:
-        ChallengeMath(budget);
-        break;
+    new Player(3);
+
+    while (true) {
+      CreateDungeon(6, 4);
+      GenerateDungeon(1);
+      RevealFloor();
+      PrintKnownMap();
+      WaitForEnter();
     }
   }
 
@@ -61,6 +50,11 @@ class CSE110HC {
    */
   private void CreateDungeon(int width, int height) {
     dungeonFloor = new Room[height][width];
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        SetRoom(new Room(new Vector2(x, y), false));
+      }
+    }
   }
 
   /**
@@ -68,11 +62,73 @@ class CSE110HC {
    */
   private void GenerateDungeon(int difficulty) {
     Random r = new Random();
-    for (int x = 0; x < dungeonFloor[0].length; x++) {
-      for (int y = 0; y < dungeonFloor.length; y++) {
-        dungeonFloor[y][x] = new Room(new Vector2(x, y), r.nextBoolean());
+    int keyX = -1, keyY = -1;
+    int doorX = -1, doorY = -1;
+    int strtX = -1, strtY = -1;
+
+    // Generate key and door positions
+    while (!InBounds(keyX, keyY)) {
+      keyX = r.nextInt(dungeonFloor[0].length - (dungeonFloor[0].length / 5) - 1) + (dungeonFloor[0].length / 5) + 1;
+      keyY = r.nextInt(dungeonFloor.length);
+    }
+    while (!InBounds(doorX, doorY) || (doorX == keyX && doorY == keyY)) {
+      doorX = r.nextInt(dungeonFloor[0].length - (dungeonFloor[0].length / 5) - 1) + (dungeonFloor[0].length / 5) + 1;
+      doorY = r.nextInt(dungeonFloor.length);
+      if (new Vector2(doorX, doorY)
+          .Distance(new Vector2(keyX, keyY)) <= Math.max(dungeonFloor.length, dungeonFloor[0].length) / 3) {
+        doorX = -1;
+        doorY = -1;
       }
     }
+    SetRoom(new Room(new Vector2(keyX, keyY), true, true));
+    SetRoom(new Room(new Vector2(doorX, doorY), true, false, true));
+
+    strtX = 0;
+    strtY = r.nextInt(dungeonFloor.length);
+
+    // Generate path from key to door
+    Vector2 pathCoord = new Vector2(doorX, doorY);
+    while (!IsContinuous(new Vector2(keyX, keyY), new Vector2(doorX, doorY))) {
+      pathCoord = CoordTowards(pathCoord, new Vector2(keyX, keyY));
+      SetRoom(new Room(pathCoord, true));
+    }
+
+    // Generate path from start to random tunnel piece
+    pathCoord = new Vector2(strtX, strtY);
+    Vector2 targetCoord = GetVisitableRoom().GetCoordinates();
+    while (!IsContinuous(new Vector2(strtX, strtY), targetCoord)) {
+      pathCoord = CoordTowards(pathCoord, targetCoord);
+      SetRoom(new Room(pathCoord, true));
+    }
+
+    // Generate extra tunnel pieces
+    for (int i = 0; i < dungeonFloor.length * dungeonFloor[0].length; i += 5) {
+      Room room = GetVisitableRoom();
+      Vector2 newCoord = room.GetCoordinates().Sum(RelativeOffset(r.nextInt(4)));
+      if (!InBounds(newCoord) || GetRoom(newCoord).IsVisitable()) {
+        i -= 5;
+        continue;
+      }
+      SetRoom(new Room(newCoord, true));
+      // TODO set enemy
+    }
+
+    // Place player on left side of map
+    Vector2 pos = new Vector2(strtX, strtY);
+    if (!GetRoom(pos).IsVisitable()) {
+      SetRoom(new Room(new Vector2(strtX, strtY), true));
+    }
+    GetRoom(pos).RevealRoom();
+    MoveTo(pos);
+  }
+
+  /**
+   * @param x X position of a grid
+   * @param y Y position of a grid
+   * @return Room at coordinates, or null if out of range
+   */
+  private Room GetRoom(int x, int y) {
+    return GetRoom(new Vector2(x, y));
   }
 
   /**
@@ -80,7 +136,41 @@ class CSE110HC {
    * @return Room at coordinates, or null if out of range
    */
   private Room GetRoom(Vector2 coords) {
-    return dungeonFloor[coords.y][coords.x];
+    return InBounds(coords) ? dungeonFloor[coords.y][coords.x] : null;
+  }
+
+  /**
+   * @return A random room which can be visited
+   */
+  private Room GetVisitableRoom() {
+    for (int i = 0; i < 1000; i++) {
+      Room r = GetRandomRoom();
+      if (r.IsVisitable()) {
+        return r;
+      }
+    }
+    print("ERROR! GetVisitableRoom() reached the safety limit!");
+    return null;
+  }
+
+  /**
+   * @return A random room in the dungeon
+   */
+  private Room GetRandomRoom() {
+    Random r = new Random();
+    return GetRoom(r.nextInt(dungeonFloor[0].length), r.nextInt(dungeonFloor.length));
+  }
+
+  /**
+   * Overrides the room at the new room's coordinates
+   * 
+   * @param room The room to be placed in the dungeon
+   * @return The room provided
+   */
+  private Room SetRoom(Room room) {
+    Vector2 c = room.GetCoordinates();
+    dungeonFloor[c.y][c.x] = room;
+    return room;
   }
 
   /**
@@ -98,9 +188,12 @@ class CSE110HC {
       }
       floor += "\n";
     }
-    print(floor, 0.01);
+    print(floor, 0);
   }
 
+  /**
+   * Reveals every room in the dungeon for debugging purposes or dungeon map
+   */
   private void RevealFloor() {
     for (Room[] row : dungeonFloor) {
       for (Room room : row) {
@@ -388,34 +481,71 @@ class CSE110HC {
    * @return Whether the move was valid or not
    */
   private boolean MoveRooms(int direction) {
-    Vector2 newPos = Vector2.Sum(Player.GetPos(), RelativeOffset(direction));
-    if (!InBounds(newPos)) {
+    return MoveTo(Vector2.Sum(Player.GetPos(), RelativeOffset(direction)));
+  }
+
+  /**
+   * Forces the player to move to coord, and does the according action, along with
+   * revealing nearby grids.
+   * 
+   * @param x The x coordinate to move to
+   * @param y The y coordinate to move to
+   * @return Whether the move is legal or not
+   */
+  private boolean MoveTo(int x, int y) {
+    return MoveTo(new Vector2(x, y));
+  }
+
+  /**
+   * Forces the player to move to coord, and does the according action, along with
+   * revealing nearby grids.
+   * 
+   * @param coord The coord to move to
+   * @return Whether the move is legal or not
+   */
+  private boolean MoveTo(Vector2 coord) {
+    if (!InBounds(coord)) {
       return false;
     }
-    Room room = GetRoom(newPos);
+    Room room = GetRoom(coord);
     if (!room.IsVisitable()) {
       return false;
     }
     if (room.IsDoor()) {
       if (!hasKey) {
-        print("Can't move here! There's a locked door in the way!");
-        return false;
+        print("There's a locked door with a large sign that says \"Exit\". You don't have the key.");
+      } else if (!skeletonKey) {
+        print("The key you found on this floor fits into the door.");
+        hasKey = false;
+      } else {
+        skeletonKey = false;
+        hasKey = true;
+        print(
+            "The key you purchased seems different since the last time you looked at it. It fits perfectly into the door, but snaps in half once you unlock it.");
       }
+      if (hasKey) {
+        print("Boss Fight time!");
+      }
+
     } else if (room.HasKey()) {
       if (!hasKey) {
         hasKey = true;
         print("Key collected!");
       }
     }
-    // Reveal adjacent grids around newPos
+    if (room.GetEnemy() != null) {
+      print("There's an enemy here!");
+    }
+
     for (int i = 0; i < 4; i++) {
-      Vector2 pPos = Vector2.Sum(newPos, RelativeOffset(i));
+      Vector2 pPos = Vector2.Sum(coord, RelativeOffset(i));
       if (!InBounds(pPos)) {
         continue;
       }
       GetRoom(pPos).RevealRoom();
     }
 
+    Player.SetPos(room.GetCoordinates());
     room.VisitRoom();
 
     return true;
@@ -429,6 +559,15 @@ class CSE110HC {
    */
   private Vector2 RelativeOffset(int dir) {
     return new Vector2(dir == 0 || dir == 2 ? 0 : dir == 1 ? 1 : -1, dir == 1 || dir == 3 ? 0 : dir == 0 ? 1 : -1);
+  }
+
+  /**
+   * Whether a coordinate is in bounds of the map
+   * 
+   * @return Whether it is in bounds or not
+   */
+  private boolean InBounds(int x, int y) {
+    return InBounds(new Vector2(x, y));
   }
 
   /**
@@ -451,7 +590,7 @@ class CSE110HC {
    * @param b The second point
    * @return Whether the two points are continuous
    */
-  private boolean IsContinuos(Vector2 a, Vector2 b) {
+  private boolean IsContinuous(Vector2 a, Vector2 b) {
     if (!InBounds(a) || !InBounds(b)) {
       return false;
     }
@@ -459,23 +598,54 @@ class CSE110HC {
     ArrayList<Vector2> blacklist = new ArrayList<Vector2>();
 
     whitelist.add(a);
-
-    while (whitelist.size() > 0) {
+    int limit = 1000;
+    while (whitelist.size() > 0 && limit > 0) {
       Vector2 g = whitelist.get(0);
       if (g.equals(b)) {
         return true;
       }
       for (int i = 0; i < 4; i++) {
         Vector2 d = Vector2.Sum(g, RelativeOffset(i));
-        if (!whitelist.contains(d) && !blacklist.contains(d)) {
-          whitelist.add(g);
+        if (InBounds(d) && !whitelist.contains(d) && !blacklist.contains(d) && GetRoom(d) != null
+            && GetRoom(d).IsVisitable()) {
+          whitelist.add(d);
         }
       }
       blacklist.add(g);
       whitelist.remove(0);
+      limit--;
+    }
+    if (limit == 0) {
+      print("ERROR: Safety limit reached!", 0);
     }
 
     return false;
+  }
+
+  /**
+   * Returns a coordinate one grid closer to b (randomly choosing to move x or y)
+   * 
+   * @param a The starting point
+   * @param b The goal
+   * @return The new coordinate, one grid closer
+   */
+  private Vector2 CoordTowards(Vector2 a, Vector2 b) {
+    if (a.equals(b)) {
+      return b;
+    }
+    Vector2 c = a;
+    Random r = new Random();
+    boolean needsX = a.x != b.x, needsY = a.y != b.y, isChangingX, needsIncrease;
+    int from, to;
+    if (needsX && needsY) {
+      isChangingX = r.nextBoolean();
+    } else {
+      isChangingX = needsX ? true : false;
+    }
+    from = isChangingX ? a.x : a.y;
+    to = isChangingX ? b.x : b.y;
+    needsIncrease = from < to;
+    return c.Sum(new Vector2(isChangingX ? needsIncrease ? 1 : -1 : 0, isChangingX ? 0 : needsIncrease ? 1 : -1));
   }
 
   /**
@@ -808,7 +978,9 @@ class Room {
   public String OnMap() {
     if (discovered) {
       if (!visitable) {
-        return " ";
+        return "-";
+      } else if (Player.GetPos() != null && Player.GetPos().equals(coordinates)) {
+        return "@";
       } else if (hasKey) {
         return "%";
       } else if (isDoor) {
@@ -854,6 +1026,14 @@ class Vector2 {
     return IsEqual(this, v);
   }
 
+  public Vector2 Sum(Vector2 v) {
+    return Sum(this, v);
+  }
+
+  public int Distance(Vector2 v) {
+    return Distance(this, v);
+  }
+
   public static boolean IsEqual(Vector2 a, Vector2 b) {
     return a.x == b.x && a.y == b.y;
   }
@@ -864,6 +1044,10 @@ class Vector2 {
 
   public static Vector2 Product(Vector2 a, int b) {
     return new Vector2(a.x * b, a.y * b);
+  }
+
+  public static int Distance(Vector2 a, Vector2 b) {
+    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
   }
 }
 
