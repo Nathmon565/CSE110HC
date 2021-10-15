@@ -9,6 +9,12 @@ class CSE110HC {
   public static CSE110HC singleton;
   /** Contains an [y][x] array of Rooms representing the current dungeon */
   private Room[][] dungeonFloor;
+  /** Represents the statuses the game can be in */
+  private enum Status {
+    menu, tavern, dungeon, combat
+  };
+  /** Current status of the game */
+  private Status status = Status.menu;
   // Favors
   /** Protects the player for one damage */
   private boolean secondWind = false;
@@ -33,12 +39,37 @@ class CSE110HC {
     scanner = new Scanner(System.in);
     new Player(3);
 
-    while (true) {
-      CreateDungeon(6, 4);
-      GenerateDungeon(1);
-      RevealFloor();
-      PrintKnownMap();
-      WaitForEnter();
+    int w = IntInput("Enter the width of the dungeon: ", 0, 0, 64);
+    int h = IntInput("Enter the height of the dungeon: ", 0, 0, 64);
+    CreateDungeon(w, h);
+    GenerateDungeon(1);
+		status = Status.dungeon;
+
+    while (status != Status.menu) {
+			switch(status) {
+				case menu:
+					// TODO menu lol
+					status = Status.dungeon;
+				break;
+				case dungeon:
+					PrintKnownMap();
+          PlayerMovePrompt();
+					// TODO better UI
+				break;
+				case combat:
+					print("Boss has been defeated!\nReturning to tavern...");
+					status = Status.tavern;
+				break;
+				case tavern:
+				  // Generate new dungeon for now
+					// TODO tavern stuff goes here
+					print("\nGenerating new dungeon...\n");
+					WaitForMS(500);
+					CreateDungeon(w, h);
+					GenerateDungeon(1);
+					status = Status.dungeon;
+				break;
+			}
     }
   }
 
@@ -118,8 +149,8 @@ class CSE110HC {
     if (!GetRoom(pos).IsVisitable()) {
       SetRoom(new Room(new Vector2(strtX, strtY), true));
     }
-    GetRoom(pos).RevealRoom();
     MoveTo(pos);
+    GetRoom().RevealRoom();
   }
 
   /**
@@ -137,6 +168,13 @@ class CSE110HC {
    */
   private Room GetRoom(Vector2 coords) {
     return InBounds(coords) ? dungeonFloor[coords.y][coords.x] : null;
+  }
+
+  /**
+   * @return The room the player is currently in
+   */
+  private Room GetRoom() {
+    return GetRoom(Player.GetPos());
   }
 
   /**
@@ -474,6 +512,61 @@ class CSE110HC {
   }
 
   /**
+   * Prompts the player to enter a valid cardinal direction or character in order
+   * to move and moves the player there.
+   */
+  private void PlayerMovePrompt() {
+    Vector2 moveDir;
+    print("Enter a cardinal direction ", 0, false);
+    while (true) {
+      print("(1, 2, 3, 4 or N, E, S, W): ", 0, false);
+      String in = scanner.nextLine();
+      int i = -1;
+      try { // Try if the user inputted an integer
+        i = Integer.parseInt(in) - 1;
+        if (i < 0 || i > 3) {
+          print("Enter a valid cardinal direction ", false);
+          continue;
+        }
+      } catch (Exception e) {
+        // Otherwise check to see if it was a string
+        switch (in.toLowerCase()) {
+          case "n":
+          case "north":
+            i = 0;
+            break;
+          case "e":
+          case "east":
+            i = 1;
+            break;
+          case "s":
+          case "south":
+            i = 2;
+            break;
+          case "w":
+          case "west":
+            i = 3;
+            break;
+          default:
+            print("Enter a valid cardinal direction ", false);
+            continue;
+        }
+      }
+      // Check to see if the move was valid
+
+      moveDir = RelativeOffset(i).Sum(Player.GetPos());
+      Room r = GetRoom(moveDir);
+      if (r != null && r.IsVisitable()) {
+        break;
+      } else {
+        print("You cannot move into a solid wall!");
+      }
+    }
+    // The move is valid, move there
+    MoveTo(moveDir);
+  }
+
+  /**
    * Move the player in a certain direction, updating the map and entering the new
    * room.
    * 
@@ -512,19 +605,25 @@ class CSE110HC {
       return false;
     }
     if (room.IsDoor()) {
+      boolean flag = false;
       if (!hasKey) {
         print("There's a locked door with a large sign that says \"Exit\". You don't have the key.");
       } else if (!skeletonKey) {
         print("The key you found on this floor fits into the door.");
         hasKey = false;
+        flag = true;
       } else {
+        print(
+            "The key you purchased seems different from before... It fits perfectly into the door, but breaks once you unlock it.");
         skeletonKey = false;
         hasKey = true;
-        print(
-            "The key you purchased seems different since the last time you looked at it. It fits perfectly into the door, but snaps in half once you unlock it.");
+        flag = true;
       }
-      if (hasKey) {
+      if (flag) {
         print("Boss Fight time!");
+        status = Status.combat;
+        // TODO combat for multiple rounds in a row
+        // status = Status.dungeon;
       }
 
     } else if (room.HasKey()) {
@@ -535,6 +634,9 @@ class CSE110HC {
     }
     if (room.GetEnemy() != null) {
       print("There's an enemy here!");
+      status = Status.combat;
+      StartChallenge(room.GetEnemy().GetStrength());
+      status = Status.dungeon;
     }
 
     for (int i = 0; i < 4; i++) {
@@ -558,7 +660,7 @@ class CSE110HC {
    * @return The relative coordinate
    */
   private Vector2 RelativeOffset(int dir) {
-    return new Vector2(dir == 0 || dir == 2 ? 0 : dir == 1 ? 1 : -1, dir == 1 || dir == 3 ? 0 : dir == 0 ? 1 : -1);
+    return new Vector2(dir == 0 || dir == 2 ? 0 : dir == 1 ? 1 : -1, dir == 1 || dir == 3 ? 0 : dir == 0 ? -1 : 1);
   }
 
   /**
@@ -717,6 +819,46 @@ class CSE110HC {
    */
   private int IntInput() {
     return IntInput(Integer.MIN_VALUE, Integer.MAX_VALUE);
+  }
+
+  /**
+   * Asks for the user to input a valid integer after printing a message. Will
+   * keep asking until provided.
+   * 
+   * @param message The string message to print before receiving input
+   * @return The valid number inputted by the user.
+   */
+  private int IntInput(String message) {
+    print(message, false);
+    return IntInput();
+  }
+
+  /**
+   * Asks for the user to input a valid integer between min and max after printing
+   * a message. Will keep asking until provided.
+   * 
+   * @param message The string message to print before receiving input
+   * @param min     The minmium value the user is allowed to enter (inclusive)
+   * @param max     The maximum value the user is allowed to enter (inclusive)
+   * @return The valid number inputted by the user,
+   */
+  private int IntInput(String message, int min, int max) {
+		return IntInput(message, 1, min, max);
+  }
+
+	/**
+   * Asks for the user to input a valid integer between min and max after printing
+   * a message. Will keep asking until provided.
+   * 
+   * @param message The string message to print before receiving input
+	 * @param messageSpeed The speed modifier of the message
+   * @param min     The minmium value the user is allowed to enter (inclusive)
+   * @param max     The maximum value the user is allowed to enter (inclusive)
+   * @return The valid number inputted by the user,
+   */
+  private int IntInput(String message, int messageSpeed, int min, int max) {
+    print(message, messageSpeed, false);
+    return IntInput(min, max);
   }
 
   /**
@@ -1002,8 +1144,21 @@ class Room {
     discovered = true;
   }
 
+  /**
+   * Marks the room as visited, and removes the key if present
+   */
   public void VisitRoom() {
     visited = true;
+    if (hasKey) {
+      hasKey = false;
+    }
+  }
+
+  /**
+   * Clears the enemy from the room
+   */
+  public void ClearEnemy() {
+    enemy = null;
   }
 }
 
@@ -1024,6 +1179,11 @@ class Vector2 {
   public boolean equals(Object o) {
     Vector2 v = (Vector2) o;
     return IsEqual(this, v);
+  }
+
+  @Override
+  public String toString() {
+    return "(" + x + ", " + y + ")";
   }
 
   public Vector2 Sum(Vector2 v) {
