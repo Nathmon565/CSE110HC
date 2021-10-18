@@ -41,10 +41,13 @@ class CSE110HC {
 		scanner = new Scanner(System.in);
 		new Player(3);
 
-		int w = IntInput("Enter the width of the dungeon: ", 0, 0, 64);
-		int h = IntInput("Enter the height of the dungeon: ", 0, 0, 64);
+		Random random = new Random(IntInput("Enter a seed: "));
+		int w = 4 + random.nextInt(4);
+		int h = 3 + random.nextInt(2);
+		int depth = 1;
 		CreateDungeon(w, h);
-		GenerateDungeon(1);
+
+		GenerateDungeon(depth, random);
 		status = Status.dungeon;
 
 		while (status != Status.menu) {
@@ -59,18 +62,52 @@ class CSE110HC {
 					// TODO better UI
 					break;
 				case combat:
-					print("Boss has been defeated!\nReturning to tavern...");
-					status = Status.tavern;
+					Room r = GetRoom();
+					Enemy e = r.GetEnemy();
+					print(e.GetName() + ", " + e.GetHealth());
+					// While the enemy is alive
+					while (e.GetHealth() > 0) {
+						// If the challenge was beaten
+						if (StartChallenge(e.GetStrength(), random)) {
+							// Deal damage to the enemy
+							e.DealDamage(1);
+							print("You hit the enemy " + e.GetName() + "!");
+							print("It has " + e.GetHealth() + " health remaining!");
+						} else {
+							// Deal damage
+							Player.GetPlayer().DealDamage(1);
+							print("The " + e.GetName() + " attacks you!");
+							print("You have " + Player.GetPlayer().GetHealth() + " health remaining!");
+							// Exit if the player died
+							if (Player.GetPlayer().GetHealth() < 1) {
+								break;
+							}
+						}
+					}
+					// When the enemy is dead
+					r.ClearEnemy();
+					if (GetRoom().IsDoor()) {
+						status = Status.tavern;
+					} else {
+						status = Status.dungeon;
+					}
 					break;
 				case tavern:
 					// Generate new dungeon for now
 					// TODO tavern stuff goes here
 					print("\nGenerating new dungeon...\n");
 					WaitForMS(500);
+					depth++;
+					w += random.nextInt(2);
+					h += random.nextInt(1);
 					CreateDungeon(w, h);
-					GenerateDungeon(1);
+					GenerateDungeon(depth, random);
 					status = Status.dungeon;
 					break;
+			}
+			if (Player.GetPlayer().GetHealth() < 1) {
+				// TODO user is dead
+				status = Status.menu;
 			}
 		}
 	}
@@ -92,21 +129,25 @@ class CSE110HC {
 
 	/**
 	 * Fills the rooms of the dungeon
+	 * 
+	 * @param difficulty The number of extra rooms, enemies, and strength of enemies
+	 * @param random     The random generator used
 	 */
-	private void GenerateDungeon(int difficulty) {
-		Random r = new Random();
+	private void GenerateDungeon(int difficulty, Random random) {
 		int keyX = -1, keyY = -1;
 		int doorX = -1, doorY = -1;
 		int strtX = -1, strtY = -1;
 
 		// Generate key and door positions
 		while (!InBounds(keyX, keyY)) {
-			keyX = r.nextInt(dungeonFloor[0].length - (dungeonFloor[0].length / 5) - 1) + (dungeonFloor[0].length / 5) + 1;
-			keyY = r.nextInt(dungeonFloor.length);
+			keyX = random.nextInt(dungeonFloor[0].length - (dungeonFloor[0].length / 5) - 1) + (dungeonFloor[0].length / 5)
+					+ 1;
+			keyY = random.nextInt(dungeonFloor.length);
 		}
 		while (!InBounds(doorX, doorY) || (doorX == keyX && doorY == keyY)) {
-			doorX = r.nextInt(dungeonFloor[0].length - (dungeonFloor[0].length / 5) - 1) + (dungeonFloor[0].length / 5) + 1;
-			doorY = r.nextInt(dungeonFloor.length);
+			doorX = random.nextInt(dungeonFloor[0].length - (dungeonFloor[0].length / 5) - 1) + (dungeonFloor[0].length / 5)
+					+ 1;
+			doorY = random.nextInt(dungeonFloor.length);
 			if (new Vector2(doorX, doorY)
 					.Distance(new Vector2(keyX, keyY)) <= Math.max(dungeonFloor.length, dungeonFloor[0].length) / 3) {
 				doorX = -1;
@@ -117,37 +158,47 @@ class CSE110HC {
 		SetRoom(new Room(new Vector2(doorX, doorY), true, false, true));
 
 		strtX = 0;
-		strtY = r.nextInt(dungeonFloor.length);
+		strtY = random.nextInt(dungeonFloor.length);
+		Vector2 pos = new Vector2(strtX, strtY);
 
 		// Generate path from key to door
 		Vector2 pathCoord = new Vector2(doorX, doorY);
 		while (!IsContinuous(new Vector2(keyX, keyY), new Vector2(doorX, doorY))) {
-			pathCoord = CoordTowards(pathCoord, new Vector2(keyX, keyY));
+			pathCoord = CoordTowards(pathCoord, new Vector2(keyX, keyY), random);
 			SetRoom(new Room(pathCoord, true));
 		}
 
 		// Generate path from start to random tunnel piece
 		pathCoord = new Vector2(strtX, strtY);
-		Vector2 targetCoord = GetVisitableRoom().GetCoordinates();
+		Vector2 targetCoord = GetVisitableRoom(random).GetCoordinates();
 		while (!IsContinuous(new Vector2(strtX, strtY), targetCoord)) {
-			pathCoord = CoordTowards(pathCoord, targetCoord);
+			pathCoord = CoordTowards(pathCoord, targetCoord, random);
 			SetRoom(new Room(pathCoord, true));
 		}
 
 		// Generate extra tunnel pieces
-		for (int i = 0; i < dungeonFloor.length * dungeonFloor[0].length; i += 5) {
-			Room room = GetVisitableRoom();
-			Vector2 newCoord = room.GetCoordinates().Sum(RelativeOffset(r.nextInt(4)));
+		for (int i = 0; i < dungeonFloor.length * dungeonFloor[0].length + difficulty * 2; i += 5) {
+			Room room = GetVisitableRoom(random);
+			Vector2 newCoord = room.GetCoordinates().Sum(RelativeOffset(random.nextInt(4)));
 			if (!InBounds(newCoord) || GetRoom(newCoord).IsVisitable()) {
 				i -= 5;
 				continue;
 			}
 			SetRoom(new Room(newCoord, true));
-			// TODO set enemy
 		}
 
+		for (int i = 0, safety = 1000; i < difficulty && safety > 0; safety--) {
+			Room room = GetVisitableRoom(random);
+			
+			if (!room.IsDoor() && !room.HasKey() && !room.GetCoordinates().equals(pos) && room.GetEnemy() == null) {
+				room.SetEnemy(new Enemy(1 + difficulty / 5, 1 + difficulty / 2, random));
+				i++;
+			}
+		}
+
+		GetRoom(doorX, doorY).SetEnemy(new Enemy(3 + difficulty / 5, difficulty, random));
+
 		// Place player on left side of map
-		Vector2 pos = new Vector2(strtX, strtY);
 		if (!GetRoom(pos).IsVisitable()) {
 			SetRoom(new Room(new Vector2(strtX, strtY), true));
 		}
@@ -180,11 +231,12 @@ class CSE110HC {
 	}
 
 	/**
+	 * @param random The random generator used
 	 * @return A random room which can be visited
 	 */
-	private Room GetVisitableRoom() {
+	private Room GetVisitableRoom(Random random) {
 		for (int i = 0; i < 1000; i++) {
-			Room r = GetRandomRoom();
+			Room r = GetRandomRoom(random);
 			if (r.IsVisitable()) {
 				return r;
 			}
@@ -195,10 +247,10 @@ class CSE110HC {
 
 	/**
 	 * @return A random room in the dungeon
+	 * @param random The random generator used
 	 */
-	private Room GetRandomRoom() {
-		Random r = new Random();
-		return GetRoom(r.nextInt(dungeonFloor[0].length), r.nextInt(dungeonFloor.length));
+	private Room GetRandomRoom(Random random) {
+		return GetRoom(random.nextInt(dungeonFloor[0].length), random.nextInt(dungeonFloor.length));
 	}
 
 	/**
@@ -250,17 +302,18 @@ class CSE110HC {
 	 * Creates and starts a random challenge for defeating a monster
 	 * 
 	 * @param budget The difficulty rating of the challenge.
+	 * @param random The random generator used
 	 * @return Whether the challenge was usccessful or not
 	 */
-	private boolean StartChallenge(int budget) {
-		int c = new Random().nextInt(3);
+	private boolean StartChallenge(int budget, Random random) {
+		int c = random.nextInt(3);
 		switch (c) {
 			case 1: // Complete a simple math problem
-				return ChallengeMath(budget);
+				return ChallengeMath(budget, random);
 			case 2: // Copy a phrase or sentence
-				return ChallengeCopy(budget);
+				return ChallengeCopy(budget, random);
 			default: // Unscramble a word
-				return ChallengeScramble(budget);
+				return ChallengeScramble(budget, random);
 		}
 	}
 
@@ -272,8 +325,7 @@ class CSE110HC {
 	 *               solve.
 	 * @return Whether the challenge was successful or not
 	 */
-	private boolean ChallengeMath(int budget) {
-		Random random = new Random();
+	private boolean ChallengeMath(int budget, Random random) {
 		int firstNum = random.nextInt(budget) + 1;
 		budget -= firstNum / 2;
 		int secondNum = random.nextInt(budget) + 1;
@@ -334,6 +386,7 @@ class CSE110HC {
 		}
 		if (guess == answer && elapse < timeLimit) {
 			print("That's it! Good job!");
+			return true;
 		} else if (elapse >= timeLimit) {
 			print("Time out!");
 			print(elapse + " >= " + timeLimit);
@@ -353,11 +406,10 @@ class CSE110HC {
 	 *               solve.
 	 * @return Whether the challenge was successful or not
 	 */
-	private boolean ChallengeCopy(int budget) {
+	private boolean ChallengeCopy(int budget, Random random) {
 		// minimum phrase length : 14
 		// maximum phrase length : 88
 		// average phrase length : 35
-		Random random = new Random();
 		int min, max, difficulty = random.nextInt(budget + 1);
 		budget -= difficulty;
 		// TODO balance time limit and phrase length
@@ -432,8 +484,7 @@ class CSE110HC {
 	 * @param budget Detremines the length of the word, and how long to solve.
 	 * @return Whether the challenge was successful or not
 	 */
-	private boolean ChallengeScramble(int budget) {
-		Random random = new Random();
+	private boolean ChallengeScramble(int budget, Random random) {
 		int wordLen = 0;
 		if (budget > 5) {
 			wordLen = 6;
@@ -624,8 +675,6 @@ class CSE110HC {
 			if (flag) {
 				print("Boss Fight time!");
 				status = Status.combat;
-				// TODO combat for multiple rounds in a row
-				// status = Status.dungeon;
 			}
 
 		} else if (room.HasKey()) {
@@ -635,10 +684,8 @@ class CSE110HC {
 			}
 		}
 		if (room.GetEnemy() != null) {
-			print("There's an enemy here!");
+			print("There's an enemy " + room.GetEnemy().GetName() + " here!");
 			status = Status.combat;
-			StartChallenge(room.GetEnemy().GetStrength());
-			status = Status.dungeon;
 		}
 
 		for (int i = 0; i < 4; i++) {
@@ -729,20 +776,20 @@ class CSE110HC {
 	/**
 	 * Returns a coordinate one grid closer to b (randomly choosing to move x or y)
 	 * 
-	 * @param a The starting point
-	 * @param b The goal
+	 * @param a      The starting point
+	 * @param b      The goal
+	 * @param random The random generator used
 	 * @return The new coordinate, one grid closer
 	 */
-	private Vector2 CoordTowards(Vector2 a, Vector2 b) {
+	private Vector2 CoordTowards(Vector2 a, Vector2 b, Random random) {
 		if (a.equals(b)) {
 			return b;
 		}
 		Vector2 c = a;
-		Random r = new Random();
 		boolean needsX = a.x != b.x, needsY = a.y != b.y, isChangingX, needsIncrease;
 		int from, to;
 		if (needsX && needsY) {
-			isChangingX = r.nextBoolean();
+			isChangingX = random.nextBoolean();
 		} else {
 			isChangingX = needsX ? true : false;
 		}
@@ -985,16 +1032,37 @@ class Enemy extends Entity {
 	private int strength;
 	private String name;
 
+	private static String[] enemyName = { "Slime", "Orc", "Ogre", "Troll", "Wisp", "Killer Bunny", "Giant Spider",
+			"Zombie", "Skeleton", "Flying Fish", "Giant Bee", "Swarm of Bees", "Baby Demon", "Giant Fly",
+			"Swarm of horse flies", "Mimic", "Baby Dragon", "Fire Spirit", "Ice Elemental", "Fire Elemental",
+			"Water Elemental", "Living Voodoo Doll", "Phantom", "Giant Mushroom", "Wandering Spirit", "Wasp", "Queen Bee",
+			"Black Bear", "Polar Bear", "Brown Bear", "Wendigo", "Evil Plague Doctor", "Evil Fairy", "Nimbus", "Crocodile",
+			"Alligator", "Giant Beetle", "Stone Golem", "Water Monster", "Ent", "Imp", "Swarm of poisonous baby spiders",
+			"Zombie Horse", "Skeleton Horse", "Dark Knight", "Possessed Armor", "Wandering Eye", "Cthulhu's Servant",
+			"Lunatic Cultist", "Demon", "Fallen Angel", "Giant Worm", "Elvish Archer", "Giant Snake", "Giant Dragonfly" };
+
 	/**
-	 * Creates an enemy with set stats
+	 * Creates an enemy with set stats and a random name
 	 * 
 	 * @param health   The amount of health to start with
 	 * @param strength The difficulty of the enemy
 	 */
 	public Enemy(int health, int strength) {
+		this(health, strength, new Random());
+		System.out.println("Warning: no seed is being used!");
+	}
+
+	/**
+	 * Creates an enemy with set stats and a random name
+	 * 
+	 * @param health   The amount of health to start with
+	 * @param strength The difficulty of the enemy
+	 * @param random   The random generator used
+	 */
+	public Enemy(int health, int strength, Random random) {
 		super(health);
 		this.strength = strength;
-		// Generate a random name and other fun stuff
+		this.name = enemyName[random.nextInt(enemyName.length)];
 	}
 
 	public int GetStrength() {
@@ -1003,6 +1071,10 @@ class Enemy extends Entity {
 
 	public void SetStrength(int strength) {
 		this.strength = strength;
+	}
+
+	public String GetName() {
+		return name;
 	}
 
 	/**
