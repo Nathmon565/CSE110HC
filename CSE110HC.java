@@ -659,7 +659,7 @@ class CSE110HC {
 		}
 		if (room.IsDoor()) {
 			boolean flag = false;
-			if (!hasKey) {
+			if (!hasKey && !skeletonKey) {
 				print("There's a locked door with a large sign that says \"Exit\". You don't have the key.");
 			} else if (!skeletonKey) {
 				print("The key you found on this floor fits into the door.");
@@ -674,16 +674,15 @@ class CSE110HC {
 			}
 			if (flag) {
 				print("Boss Fight time!");
+				print("There's an enemy " + room.GetEnemy().GetName() + " defending the stairs!");
 				status = Status.combat;
 			}
-
 		} else if (room.HasKey()) {
 			if (!hasKey) {
 				hasKey = true;
 				print("Key collected!");
 			}
-		}
-		if (room.GetEnemy() != null) {
+		} else if (room.GetEnemy() != null) {
 			print("There's an enemy " + room.GetEnemy().GetName() + " here!");
 			status = Status.combat;
 		}
