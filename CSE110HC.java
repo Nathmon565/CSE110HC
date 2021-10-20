@@ -17,7 +17,13 @@ class CSE110HC {
 
 	/** Current status of the game */
 	private Status status = Status.menu;
+	private int dungeonWidth;
+	private int dungeonHeight;
+	private int dungeonDepth;
+	private int seed;
 	// Favors
+	/** Reduces enemies on the next floor */
+	private boolean reducedEnemies = false;
 	/** Protects the player for one damage */
 	private boolean secondWind = false;
 	/** Allows unlocking a door without the key */
@@ -29,7 +35,7 @@ class CSE110HC {
 	private Scanner scanner;
 
 	private String[] challengeCopy = { "A Jack of all trades is master of none", "A bad cause requires many words", "A bad excuse is better than none", "A bad penny always turns up", "A bad tree does not yield good apples", "A bad workman blames his tools", "A barking dog seldom bites", "A bird in hand is worth two in a bush", "A black plum is as sweet as a white", "A book holds a house of gold", "A broken friendship may be soldered but it will never be sound", "A broken friendship may be soldered but will never be sound", "A burden of one's own choice is not felt", "A burden of one's own choice is not felt", "A burnt child dreads the fire", "A calm sea does not make a skilled sailor", "A cat has nine lives", "A chain is no stronger than its weakest link", "A chain is no stronger than its weakest link", "A change is as good as a rest", "A closed mouth catches no flies", "A constant guest is never welcome", "A danger foreseen is half avoided", "A day of sorrow is longer than a month of joy", "A drop of ink may make a million think", "A dry March, a wet April and a cool May fill barn and cellar and bring much hay.", "A dry March, a wet April and a cool May may fill barn and cellar and bring much hay", "A fault confessed is half redressed", "A flower blooms more than once", "A fly will not get into a closed mouth", "A fool and his money are (soon) easily parted", "A fool and his money are soon easily parted", "A fool at forty is a fool forever", "A friend in need is a friend indeed", "A friend to all is a friend to none", "A friend's eye is a good mirror", "A good beginning makes a good end", "A good conscience is a soft pillow", "A good example is the best sermon", "A good mind possesses a kingdom", "A good name is better than a good face", "A growing youth has a wolf in his belly", "A guilty conscience needs no accuser", "A handful of patience is worth more than a bushel of brains", "A happy heart is better than a full purse", "A heavy purse gives to a light heart", "A hedge between keeps friendship green", "A hungry belly has no ears", "A hungry wolf is fixed to no place", "A journey of a thousand miles begins with a single step", "A journey of a thousand miles starts with a single step", "A lender nor borrower be", "A leopard cannot change its spots", "A lie begets a lie", "A little fire is quickly trodden out", "A little of what you fancy does you good", "A loaded wagon makes no noise", "A loveless life is a living death", "A loveless life is living death", "A man can die but once", "A man is as old as he feels himself to be", "A man is judged by his deeds, not by his words", "A man is known by the company he keeps", "A monkey in silk is a monkey no less", "A new broom sweeps clean (but the old brush knows all the corners...)", "A nod is as good as a wink (to a blind horse / man)", "A nod is as good as a wink (to a blind man)", "A picture paints a thousand words", "A problem shared is a problem halved", "A rising tide lifts all boats", "A rolling stone gathers no moss", "A rotten apple spoils the barrel", "A smooth sea never made a skilled mariner", "A soft answer turneth away wrath", "A stitch in time saves nine", "A stumble may prevent a fall", "A swallow does not make the summer", "A tidy house holds a bored woman", "A watched pot never boils", "A wise head keeps a still tongue", "A wonder lasts but nine days", "A young idler, an old beggar", "Absence is the mother of disillusion", "Absence makes the heart grow fonder", "Action without vision is a nightmare", "Actions speak louder than words", "Admiration is the daughter of ignorance", "Adversity makes strange bedfellows", "Advice is cheap", "Advice is least heeded when most needed", "Advisors run no risks", "After dinner rest a while, after supper walk a while", "Age before beauty", "Agree, for the law is costly", "All cats are grey in the dark", "All covet, all lose", "All days are short to industry and long to idleness", "All good things come to those who wait", "All in good time", "All is fair in love and war", "All roads lead to Rome", "All that glitters is not gold", "All things are difficult before they are easy", "All things grow with time - except grief", "All work and no play makes Jack a dull boy", "All's well that ends well", "An Englishman's home is his castle", "An Englishman's home is his castle", "An ant may well destroy a whole dam", "An apple a day keeps the doctor away", "An empty purse frightens away friends", "An idle brain is the devil's workshop", "An old fox is not easily snared", "An onion a day keeps everyone away", "An ounce of discretion is worth a pound of wit", "An ounce of prevention is worth a pound of cure", "Anger is the one thing made better by delay", "Another day, another dollar", "Any time means no time", "April showers bring May flowers", "As you sow, so shall you reap", "Ask me no questions, I'll tell you no lies", "Bad beginnings lead to bad results", "Bad news travels fast", "Be just before you are generous", "Be swift to hear, slow to speak", "Beauty is in the eye of the beholder", "Beauty is only skin deep", "Beauty is the wisdom of women. Wisdom is the beauty of men", "Better an egg today than a hen tomorrow", "Better be alone than in bad company", "Better be the head of a dog than the tail of a lion", "Better be untaught than ill-taught", "Better brain than brawn. ", "Better flatter a fool than fight him", "Better late than never", "Better lose the saddle than the horse", "Better safe than sorry", "Better the devil you know than the devil you don't know", "Better to drink the milk than to eat the cow", "Beware of Greeks bearing gifts", "Birds of a feather flock together", "Blood is thicker than water", "Blood will out", "Care is no cure", "Charity begins at home", "Children and fools tell the truth", "Children are certain cares but uncertain comforts", "Cleanliness is next to godliness", "Clear moon, frost soon", "Clothes don't make the man", "Constant occupation prevents temptation", "Courtesy is contagious", "Cross the stream where it is shallowest", "Crosses are ladders that lead to heaven", "Dead men tell no lies", "Death is the great leveller", "Diamonds cut diamonds", "Diligence is the mother of good fortune", "Discretion is the better part of valour", "Diseases of the soul are more dangerous than those of the body", "Distance makes the heart grow fonder", "Dogs of the same street bark alike", "Don't bark if you can't bite", "Don't count your chickens before they're hatched", "Don't dig your grave with your own knife and fork", "Don't judge a book by its cover", "Early to bed, and early to rise, makes a man healthy, wealthy and wise", "Easier said than done", "Eating an apple every day can help to keep you healthy", "Elbow grease is the best polish", "Empty vessels make the most noise", "Enough is as good as a feast", "Even a worm will turn", "Every ass likes to hear himself bray", "Every cloud has a silver lining", "Every man for himself", "Every man has his price", "Every man is the architect of his own fortune", "Every man thinks his own geese swans", "Every path has its puddle", "Every rose has its thorn", "Every why has a wherefore", "Everything in the garden is rosy", "Experience is the father of wisdom", "Facts speak louder than words", "Failure teaches success", "Fair exchange is no robbery", "False friends are worse than open enemies", "Familiarity breeds contempt", "Fear lends wings", "Fine words butter no parsnips", "First come, first served", "Fool me once, shame on you; fool me twice, shame on me", "Fools rush in where angels fear to tread", "Forbidden fruit is sweet", "Friendship is like money, easier made than kept", "Friendship is love with understanding", "Gardens are not made by sitting in the shade", "Give someone an inch and they will take a mile (or yard)", "Give someone enough rope and they will hang themselves", "God helps those who help themselves", "Good accounting makes good friends", "Good and quickly seldom meet", "Good management is better than good income", "Grasp all, lose all", "Great minds think alike", "Great oaks grow from small acorns", "Grief divided is made lighter", "Half a loaf is better than none", "Handsome is what handsome does", "Hard words break no bones", "Haste makes waste", "Hatred is as blind as love", "He can who believes he can", "He has enough who is content", "He laughs best who laughs last", "He who digs a pit for others falls into it himself", "He who hesitates is lost", "He who is everywhere is nowhere", "He who knows nothing doubts nothing", "He who pays the piper calls the tune", "He who plays with fire gets burnt", "He who wills the end wills the means", "Health is better than wealth", "Home is where the heart is", "Honesty is the best policy", "Honey catches more flies than vinegar", "However long the night, the dawn will break", "Hunger is a good sauce", "If a camel gets his nose in a tent, his body will follow", "If a person keeps moving from place to place, they gain neither friends nor possessions", "If in February there be no rain, 'tis neither good for hay nor grain", "If two ride a horse, one must ride behind", "If wishes were horses, then beggars would ride", "If you are patient in one moment of anger, you will avoid 100 days of sorrow", "If you chase two rabbits, you will not catch either one", "If you want a friend, be a friend", "Ignorance is bliss", "In for a penny, in for a pound", "In the land of the blind the one-eyed man is king", "In times of prosperity friends are plentiful", "It is always darkest before the dawn", "It never rains but it pours", "It takes all sorts to make a world", "It's no use crying over spilt milk", "Justice delayed is justice denied", "Kill not the goose that lays the golden egg", "Kill one to warn a hundred", "Kindle not a fire you cannot put out", "Kindness begets kindness", "Kindness, like a boomerang, always returns", "Knowledge in youth is wisdom in age", "Knowledge is power", "Laughter is the best medicine", "Learn to walk before you run", "Learning is a treasure that will follow its owner everywhere", "Least said, soonest mended", "Let bygones be bygones", "Let the chips fall where they may", "Liars need good memories", "Liberty is not licence (us: license)", "Like father, like son", "Little strokes fell good oaks", "Look before you leap", "Loose lips sink ships", "Losers weepers, finders keepers", "Love is blind", "Make a silk purse out of a sow's ear", "Man is the head of the family and woman is the neck that turns the head", "Man proposes, God disposes", "Manners make the man", "Many a true word is spoken in jest", "Many hands make light work", "March comes in like a lion and goes out like a lamb", "March winds and April showers bring forth May flowers", "Mark, learn and inwardly digest", "Marry in haste, repent as leisure", "Memory is the treasure of the mind", "Men make houses, women make homes", "Might as well be hanged for a sheep as for a lamb", "Misery loves company", "Money begets money", "Money doesn't grow on trees", "Monkey see, monkey do", "Necessity is the mother of invention", "Necessity knows no law", "Need teaches a plan", "Needs must when the devil drives", "Never put off till tomorrow what can be done today", "Never say die", "Never trouble troubles until troubles trouble you", "No cure no pay", "No joy without annoy", "No losers, no winners", "No man can serve two masters", "No man is a hero to his valet", "No man is an island", "No news is good news", "No pain, no gain", "No rain, no grain", "No smoke without fire", "No wind, no waves", "Nobody is perfect", "Nothing ventured nothing gained", "Oil and water do not mix", "Once bitten, twice shy", "One father is (worth) more than a hundred schoolmasters", "One good turn deserves another", "One man's meat is another man's poison", "One man's trash is another man's treasure", "One of these days is none of these days", "One swallow does not make the summer", "One swallow doesn't make a summer", "One today is worth two tomorrows", "Only real friends will tell you when your face is dirty", "Opportunity seldom knocks twice", "Out of sight, out of mind", "Out of the mouth of babes and sucklings", "Parents are patterns", "Penny wise, pound foolish", "People who live in glass houses should not throw stones", "Pity is akin to love", "Poverty waits at the gates of idleness", "Practice makes perfect", "Prevention is better than cure", "Pride comes before a fall", "Procrastination is the thief of time", "Punctuality is the soul of business", "Put all your eggs in one basket", "Rats desert a sinking ship", "Reason does not come before years", "Respect is greater from a distance", "Revenge is a dish best served cold", "Revenge is sweet", "Rome was not built in a day", "Safe bind, safe find", "Save me from my friends", "Saying is one thing, doing is another", "Short reckonings make long friends", "Sickness in the body brings sadness to the mind", "Silence gives consent", "Snug as a bug in a rug", "Spare the rod and spoil the child", "Speech is silver, silence is golden", "Sticks and stones will break my bones but names will never hurt me", "Still waters run deep", "Stolen fruit is the sweetest", "Stolen pleasures are the sweetest", "Tall oaks grow from little acorns", "Telling one lie will lead you to tell another one", "The apple doesn't fall far from the tree", "The best advice is found on the pillow", "The best helping hand is at the end of your sleeve", "The best things in life are free", "The darkest hour is just before dawn", "The devil looks after his own", "The devil makes work for idle hands", "The die is cast", "The early bird catches the worm", "The end justifies the means", "The first step is the hardest", "The more haste, the less speed", "The more you have, the more you want", "The mouse that has but one hole is quickly taken", "The pen is mightier than the sword", "The proof of the pudding is in the eating", "The road to hell is paved with good intentions", "The tongue wounds more than a lance", "The truth is in the wine", "The used key is always bright", "The way to a man's heart is through his stomach", "The wish is father to the thought", "Two wrongs don't make a right", "Uneasy lies the head that wears a crown", "Union is strength", "United we stand, divided we fall", "Unwillingness easily finds an excuse", "Use it or lose it", "Variety is the spice of life", "Virtue is its own reward", "Vision without action is a daydream", "Walls have ears", "Waste not, want not", "We are what we eat", "What a man says drunk, he thinks sober", "What soberness conceals, drunkenness reveals", "What the eye doesn't see, the heart doesn't grieve over", "When in Rome, do as the Romans do", "When poverty comes in the door, love goes out the window", "When the cat's away, the mice play", "Where there's a will there's a way", "Where there's life there's hope", "Who makes himself a sheep will be eaten by the wolves", "Wisdom is better than strength", "Worry often gives a small thing a big shadow", "You are never too old to learn", "You are what you eat", "You can lead a horse to water but you can't make it drink", "You can't teach an old dog new tricks", "You never know what you can do until you try", "You scratch my back and I'll scratch yours", "Accidents will happen" };
-	private String[] challengeScrambles = { "able", "accent", "accept", "active", "adjust", "advice", "affect", "afford", "afraid", "agency", "agony", "agree", "aisle", "alert", "allow", "aloof", "altar", "ample", "anger", "ankle", "annual", "ant", "appear", "apple", "area", "arm", "art", "ash", "ask", "assume", "asylum", "attic", "avenue", "avoid", "awake", "awful", "axis", "bacon", "bail", "bait", "bald", "ballet", "ban", "bang", "banish", "basic", "basin", "basket", "battle", "beach", "bear", "beef", "behave", "belief", "belly", "belong", "berry", "bird", "blank", "bless", "blonde", "blood", "boil", "bold", "boom", "border", "borrow", "bottom", "bounce", "bowl", "boy", "brag", "braid", "bread", "breeze", "bride", "broken", "bronze", "bubble", "budge", "budget", "bullet", "burial", "bury", "bush", "busy", "cable", "cage", "calf", "calm", "can", "candle", "canvas", "carbon", "carpet", "cart", "carve", "cash", "cat", "cater", "cats", "cattle", "cave", "cellar", "chalk", "chaos", "charm", "cheat", "cheese", "cherry", "chew", "child", "chop", "chord", "church", "circle", "civic", "clash", "clay", "climb", "clinic", "closed", "cloud", "coach", "coast", "coerce", "coffin", "collar", "color", "comedy", "core", "cotton", "cough", "couple", "cow", "cower", "craft", "create", "crew", "crisis", "crouch", "crown", "cruel", "cruise", "curl", "daily", "dairy", "dance", "danger", "dash", "dawn", "day", "dead", "deaf", "death", "debt", "decide", "deer", "define", "deport", "deputy", "desire", "detail", "devote", "differ", "dilute", "dinner", "dip", "dire", "disk", "dive", "dollar", "donate", "donor", "dose", "dozen", "dragon", "drama", "dress", "driver", "drown", "duck", "due", "dump", "dust", "early", "eat", "echo", "egg", "elapse", "elbow", "elect", "embryo", "employ", "empty", "energy", "enjoy", "ensure", "essay", "ethics", "ethnic", "exceed", "excess", "exile", "expert", "expose", "eye", "face", "factor", "fade", "faint", "faith", "family", "far", "fare", "farmer", "favor", "fax", "feast", "fence", "fever", "fibre", "fight", "filter", "finger", "firm", "first", "fit", "flag", "flavor", "flawed", "float", "flood", "flour", "flu", "folk", "forbid", "forget", "fork", "format", "forum", "foster", "fox", "frank", "friend", "frozen", "fuel", "fund", "fuss", "galaxy", "gap", "gape", "garlic", "gasp", "gear", "gem", "get", "ghost", "gift", "glad", "glare", "gloom", "glove", "glue", "go", "goat", "gold", "gossip", "gown", "graph", "gravel", "graze", "grin", "grip", "groan", "grudge", "guilt", "gun", "habit", "halt", "hammer", "hang", "happy", "harbor", "harm", "harsh", "haul", "have", "hay", "hear", "heaven", "heel", "heir", "helmet", "herb", "hero", "hiccup", "high", "hill", "hobby", "hole", "honest", "honey", "horror", "hotdog", "human", "hunter", "ice", "ideal", "ignore", "immune", "inch", "index", "infect", "injure", "inn", "inner", "inside", "insist", "insure", "irony", "issue", "ivory", "jail", "jam", "jaw", "jelly", "jest", "jewel", "joke", "judge", "jump", "junior", "jury", "kale", "kid", "kill", "killer", "kind", "kit", "knead", "knee", "knit", "knot", "label", "lack", "lady", "lamb", "lane", "laser", "last", "latest", "launch", "lawn", "layer", "leader", "leak", "learn", "lease", "left", "lick", "life", "like", "lily", "linear", "linen", "lion", "listen", "live", "liver", "loan", "locate", "lodge", "lonely", "lose", "loud", "lounge", "lover", "loyal", "lunch", "maid", "main", "make", "makeup", "marine", "market", "marsh", "mass", "matrix", "mayor", "meadow", "mean", "means", "medal", "member", "mercy", "metal", "middle", "mild", "milk", "miner", "mirror", "mist", "mix", "mobile", "modest", "module", "mold", "moment", "monkey", "mood", "mosaic", "mother", "moving", "mud", "murder", "museum", "mutter", "myth", "native", "neck", "nerve", "node", "noisy", "north", "notion", "novel", "nuance", "nun", "nut", "obese", "occupy", "ocean", "office", "offset", "old", "opera", "oppose", "orbit", "origin", "other", "oven", "owner", "pace", "page", "palace", "pan", "pardon", "past", "path", "pause", "pawn", "pay", "peanut", "penny", "pepper", "pest", "piano", "pie", "pillow", "pin", "pitch", "plain", "planet", "plead", "pledge", "pluck", "poem", "policy", "pool", "poor", "porter", "powder", "pray", "prayer", "preach", "pride", "print", "prize", "proud", "prove", "push", "queen", "queue", "quit", "rabbit", "racial", "rack", "raid", "rain", "ranch", "rank", "rare", "rate", "reach", "ready", "rear", "rebel", "redeem", "reform", "region", "reign", "relate", "remark", "remind", "rent", "resort", "result", "retain", "reveal", "revise", "rhythm", "ribbon", "ride", "rider", "rifle", "riot", "river", "roar", "robot", "rocket", "room", "rope", "round", "rub", "rumor", "rung", "rush", "sacred", "safari", "safe", "salad", "salon", "sample", "sandal", "say", "scrap", "scrape", "sea", "season", "secret", "seem", "self", "sell", "senior", "sermon", "shake", "shape", "shark", "sharp", "shave", "sheet", "shield", "shine", "shoe", "shout", "shrug", "sick", "siege", "sieve", "silk", "singer", "sip", "sister", "skate", "sketch", "skill", "skirt", "sky", "slap", "slave", "sleeve", "slime", "slip", "slogan", "small", "smoke", "smooth", "snack", "snake", "snarl", "sniff", "soap", "sock", "solo", "solve", "sound", "spell", "spider", "spill", "spit", "spoon", "spot", "squad", "squash", "stab", "stake", "stamp", "statue", "stay", "steady", "steam", "stem", "sticky", "still", "sting", "stitch", "stone", "store", "strain", "strap", "street", "stride", "strip", "stroll", "studio", "stuff", "stun", "stupid", "suburb", "subway", "suffer", "suit", "sum", "summit", "suntan", "sure", "swarm", "sweat", "swell", "swipe", "switch", "symbol", "tablet", "tank", "target", "tasty", "taxi", "team", "tell", "tenant", "tent", "thank", "thanks", "theory", "thigh", "threat", "throat", "thrust", "thumb", "tidy", "tiger", "timber", "tiptoe", "tired", "toast", "toll", "ton", "tool", "toss", "touch", "tower", "toy", "trail", "trait", "tray", "tread", "treaty", "trench", "tribe", "truck", "true", "tumour", "tunnel", "turn", "tycoon", "ulcer", "uneasy", "union", "unique", "unity", "unlike", "urge", "useful", "utter", "vacant", "vain", "varied", "vat", "veil", "velvet", "viable", "victim", "vile", "virgin", "virus", "voyage", "wagon", "waiter", "wake", "wander", "want", "war", "water", "weak", "wealth", "weave", "weed", "whale", "wheel", "whole", "widen", "width", "window", "winner", "wire", "wolf", "wonder", "wool", "worker", "worry", "wound", "wrist", "year", "young", "zone" };
+	private String[] challengeScrambles = { "able", "accent", "accept", "active", "adjust", "advice", "affect", "afford", "afraid", "agency", "agony", "agree", "aisle", "alert", "allow", "aloof", "altar", "ample", "anger", "ankle", "annual", "ant", "appear", "apple", "area", "arm", "art", "ash", "ask", "assume", "asylum", "attic", "avenue", "avoid", "awake", "awful", "axis", "bacon", "bail", "bait", "bald", "ballet", "ban", "bang", "banish", "basic", "basin", "basket", "battle", "beach", "bear", "beef", "behave", "belief", "belly", "belong", "berry", "bird", "blank", "bless", "blonde", "blood", "boil", "bold", "boom", "border", "borrow", "bottom", "bounce", "bowl", "boy", "brag", "braid", "bread", "breeze", "bride", "broken", "bronze", "bubble", "budge", "budget", "bullet", "burial", "bury", "bush", "busy", "cable", "cage", "calf", "calm", "can", "candle", "canvas", "carbon", "carpet", "cart", "carve", "cash", "cat", "cater", "cats", "cattle", "cave", "cellar", "chalk", "chaos", "charm", "cheat", "cheese", "cherry", "chew", "child", "chop", "chord", "church", "circle", "civic", "clash", "clay", "climb", "clinic", "closed", "cloud", "coach", "coast", "coerce", "coffin", "collar", "color", "comedy", "core", "cotton", "cough", "couple", "cow", "cower", "craft", "create", "crew", "crisis", "crouch", "crown", "cruel", "cruise", "curl", "daily", "dairy", "dance", "danger", "dash", "dawn", "day", "dead", "deaf", "death", "debt", "decide", "deer", "define", "deport", "deputy", "desire", "detail", "devote", "differ", "dilute", "dinner", "dip", "dire", "disk", "dive", "dollar", "donate", "donor", "doom", "dose", "dozen", "dragon", "drama", "dress", "driver", "drown", "duck", "due", "dump", "dust", "early", "eat", "echo", "egg", "elapse", "elbow", "elect", "embryo", "employ", "empty", "energy", "enjoy", "ensure", "essay", "ethics", "ethnic", "exceed", "excess", "exile", "expert", "expose", "eye", "face", "factor", "fade", "faint", "faith", "family", "far", "fare", "farmer", "favor", "fax", "feast", "fence", "fever", "fibre", "fight", "filter", "finger", "firm", "first", "fit", "flag", "flavor", "flawed", "float", "flood", "flour", "flu", "folk", "forbid", "forget", "fork", "format", "forum", "foster", "fox", "frank", "friend", "frozen", "fuel", "fund", "fuss", "galaxy", "gap", "gape", "garlic", "gasp", "gear", "gem", "get", "ghost", "gift", "glad", "glare", "gloom", "glove", "glue", "go", "goat", "gold", "gossip", "gown", "graph", "gravel", "graze", "grin", "grip", "groan", "grudge", "guilt", "gun", "habit", "halt", "hammer", "hang", "happy", "harbor", "harm", "harsh", "haul", "have", "hay", "hear", "heaven", "heel", "heir", "helmet", "herb", "hero", "hiccup", "high", "hill", "hobby", "hole", "honest", "honey", "horror", "hotdog", "human", "hunter", "ice", "ideal", "ignore", "immune", "inch", "index", "infect", "injure", "inn", "inner", "inside", "insist", "insure", "irony", "issue", "ivory", "jail", "jam", "jaw", "jelly", "jest", "jewel", "joke", "judge", "jump", "junior", "jury", "kale", "kid", "kill", "killer", "kind", "kit", "knead", "knee", "knit", "knot", "label", "lack", "lady", "lamb", "lane", "laser", "last", "latest", "launch", "lawn", "layer", "leader", "leak", "learn", "lease", "left", "lick", "life", "like", "lily", "linear", "linen", "lion", "listen", "live", "liver", "loan", "locate", "lodge", "lonely", "lose", "loud", "lounge", "lover", "loyal", "lunch", "maid", "main", "make", "makeup", "marine", "market", "marsh", "mass", "matrix", "mayor", "meadow", "mean", "means", "medal", "member", "mercy", "metal", "middle", "mild", "milk", "miner", "mirror", "mist", "mix", "mobile", "modest", "module", "mold", "moment", "monkey", "mood", "mosaic", "mother", "moving", "mud", "murder", "museum", "mutter", "myth", "native", "neck", "nerve", "node", "noisy", "north", "notion", "novel", "nuance", "nun", "nut", "obese", "occupy", "ocean", "office", "offset", "old", "opera", "oppose", "orbit", "origin", "other", "oven", "owner", "pace", "page", "palace", "pan", "pardon", "past", "path", "pause", "pawn", "pay", "peanut", "penny", "pepper", "pest", "piano", "pie", "pillow", "pin", "pitch", "plain", "planet", "plead", "pledge", "pluck", "poem", "policy", "pool", "poor", "porter", "powder", "pray", "prayer", "preach", "pride", "print", "prize", "proud", "prove", "push", "queen", "queue", "quit", "rabbit", "racial", "rack", "raid", "rain", "ranch", "rank", "rare", "rate", "reach", "ready", "rear", "rebel", "redeem", "reform", "region", "reign", "relate", "remark", "remind", "rent", "resort", "result", "retain", "reveal", "revise", "rhythm", "ribbon", "ride", "rider", "rifle", "riot", "river", "roar", "robot", "rocket", "room", "rope", "round", "rub", "rumor", "rung", "rush", "sacred", "safari", "safe", "salad", "salon", "sample", "sandal", "say", "scrap", "scrape", "sea", "season", "secret", "seem", "self", "sell", "senior", "sermon", "shake", "shape", "shark", "sharp", "shave", "sheet", "shield", "shine", "shoe", "shout", "shrug", "sick", "siege", "sieve", "silk", "singer", "sip", "sister", "skate", "sketch", "skill", "skirt", "sky", "slap", "slave", "sleeve", "slime", "slip", "slogan", "small", "smoke", "smooth", "snack", "snake", "snarl", "sniff", "soap", "sock", "solo", "solve", "sound", "spell", "spider", "spill", "spit", "spoon", "spot", "squad", "squash", "stab", "stake", "stamp", "statue", "stay", "steady", "steam", "stem", "sticky", "still", "sting", "stitch", "stone", "store", "strain", "strap", "street", "stride", "strip", "stroll", "studio", "stuff", "stun", "stupid", "suburb", "subway", "suffer", "suit", "sum", "summit", "suntan", "sure", "swarm", "sweat", "swell", "swipe", "switch", "symbol", "tablet", "tank", "target", "tasty", "taxi", "team", "tell", "tenant", "tent", "thank", "thanks", "theory", "thigh", "threat", "throat", "thrust", "thumb", "tidy", "tiger", "timber", "tiptoe", "tired", "toast", "toll", "ton", "tool", "toss", "touch", "tower", "toy", "trail", "trait", "tray", "tread", "treaty", "trench", "tribe", "truck", "true", "tumour", "tunnel", "turn", "tycoon", "ulcer", "uneasy", "union", "unique", "unity", "unlike", "urge", "useful", "utter", "vacant", "vain", "varied", "vat", "veil", "velvet", "viable", "victim", "vile", "virgin", "virus", "voyage", "wagon", "waiter", "wake", "wander", "want", "war", "water", "weak", "wealth", "weave", "weed", "whale", "wheel", "whole", "widen", "width", "window", "winner", "wire", "wolf", "wonder", "wool", "worker", "worry", "wound", "wrist", "year", "young", "zone" };
 
 	public static void main(String[] args) {
 		singleton = new CSE110HC();
@@ -40,9 +46,10 @@ class CSE110HC {
 	private void Run() {
 		scanner = new Scanner(System.in);
 		new Player(3);
-
 		Random random = new Random();
-		int w = 0, h = 0, depth = 0;
+		dungeonWidth = 0;
+		dungeonHeight = 0;
+		dungeonDepth = 0;
 		status = Status.menu;
 
 		print("Welcome to the dungeon!");
@@ -50,21 +57,22 @@ class CSE110HC {
 		while (true) {
 			switch (status) {
 				case menu:
-					int choice = IntInput("1) Start Game\n2) Set Seed\n", 1, 1, 2);
+					int choice = IntInputList(new String[] { "Start Game", "Set Seed" });
 					switch (choice) {
 						case 1:
-							w = 4 + random.nextInt(4);
-							h = 3 + random.nextInt(2);
-							depth = 1;
-							CreateDungeon(w, h);
-							GenerateDungeon(depth, random);
+							print("You descend into the first floor of the dungeon...");
+							dungeonWidth = 4 + random.nextInt(4);
+							dungeonHeight = 3 + random.nextInt(2);
+							dungeonDepth = 1;
+							CreateDungeon(dungeonWidth, dungeonHeight);
+							GenerateDungeon(dungeonDepth, random);
 							status = Status.dungeon;
 							break;
 						case 2:
-							random = new Random(IntInput("Enter a seed: "));
+							seed = IntInput("Enter a seed: ");
+							random = new Random(seed);
 							break;
 					}
-
 					break;
 				case dungeon:
 					PrintKnownMap();
@@ -85,9 +93,14 @@ class CSE110HC {
 							print("It has " + e.GetHealth() + " health remaining!");
 						} else {
 							// Deal damage
-							Player.GetPlayer().DealDamage(1);
 							print("The " + e.GetName() + " attacks you!");
-							print("You have " + Player.GetPlayer().GetHealth() + " health remaining!");
+							if (secondWind) {
+								secondWind = false;
+								print("Your armor blocks the attack, but is ruined in the process!");
+							} else {
+								Player.GetPlayer().DealDamage(1);
+								print("You have " + Player.GetPlayer().GetHealth() + " health remaining!");
+							}
 							// Exit if the player died
 							if (Player.GetPlayer().GetHealth() < 1) {
 								break;
@@ -100,31 +113,92 @@ class CSE110HC {
 						Player.AddScore(10);
 						Player.AddFavor();
 						status = Status.tavern;
+						print("After felling the beast, you return to the tavern to recover.");
 					} else {
 						Player.AddScore(3);
 						status = Status.dungeon;
 					}
 					break;
 				case tavern:
-					// Generate new dungeon for now
-					// TODO tavern stuff goes here
-					print("\nGenerating new dungeon...\n");
-					Player.AddScore(2);
-					WaitForMS(500);
-					depth++;
-					w += random.nextInt(2);
-					h += random.nextInt(1);
-					CreateDungeon(w, h);
-					GenerateDungeon(depth, random);
-					status = Status.dungeon;
+					int favors = Player.GetFavors();
+					print("\nYou have " + favors + " favor" + (favors == 0 || favors > 1 ? "s" : "") + ".");
+					int tavernChoice = IntInputList(new String[] { "Enter the next dungeon (To Floor " + (dungeonDepth + 1) + ")",
+							"Reduce the number of enemies in the next dungeon (1 favor)", "Purchase a Second Wind (1 Favor)",
+							"Purchase a Skeleton Key (2 favors)", "Purchase a Dungeon Map (3 favors)" }, 0);
+					switch (tavernChoice) {
+						case 1:
+							EnterNextDungeon(random);
+							break;
+						case 2:
+							if (favors >= 1 && !reducedEnemies) {
+								Player.AddFavors(-1);
+								print("You redeem an extermination team to thin out the enemies of the next floor");
+								reducedEnemies = true;
+							} else if (reducedEnemies) {
+								print("The extermination team is already busy.");
+							} else {
+								print("You don't have enough favors to redeem this item.");
+							}
+							break;
+						case 3:
+							if (favors >= 1 && !secondWind) {
+								Player.AddFavors(-1);
+								print("You redeem a powerful, but brittle, set of armor.");
+								secondWind = true;
+							} else if (secondWind) {
+								print("You can't wear another set of armor over your current set.");
+							} else {
+								print("You don't have enough favors to redeem this item.");
+							}
+							break;
+						case 4:
+							if (favors >= 2 && !skeletonKey) {
+								Player.AddFavors(-2);
+								print("You redeem a blank key with the handle in the shape of a skull.");
+								skeletonKey = true;
+							} else if (skeletonKey) {
+								print("You already have a key of this kind.");
+							} else {
+								print("You don't have enough favors to redeem this item.");
+							}
+							break;
+						case 5:
+							if (favors >= 3 && !dungeonMap) {
+								Player.AddFavors(-3);
+								print("You redeem an old, blank sheet of parchment which gives you the chills.");
+								dungeonMap = true;
+							} else if (dungeonMap) {
+								print("No way. One is aready frightening enough.");
+							} else {
+								print("You don't have enough favors to redeem this item.");
+							}
+							break;
+					}
 					break;
 			}
 			if (Player.GetPlayer().GetHealth() < 1) {
 				// TODO user is dead
-				print("You died! Score: " + Player.GetScore());
+				print("You died! Score: " + Player.GetScore() + "\nSeed: " + seed);
 				status = Status.menu;
 			}
 		}
+	}
+
+	private void EnterNextDungeon(Random random) {
+		print("\nGenerating new dungeon...\n");
+		Player.AddScore(2);
+		WaitForMS(500);
+		dungeonDepth++;
+		dungeonWidth += random.nextInt(2);
+		dungeonHeight += random.nextInt(1);
+		CreateDungeon(dungeonWidth, dungeonHeight);
+		GenerateDungeon(dungeonDepth, random);
+		if (dungeonMap) {
+			dungeonMap = false;
+			print("The ancient map writes itself, revealing the secrets of the dungeon...");
+			RevealFloor();
+		}
+		status = Status.dungeon;
 	}
 
 	/**
@@ -204,11 +278,14 @@ class CSE110HC {
 
 		for (int i = 0, safety = 1000; i < difficulty && safety > 0; safety--) {
 			Room room = GetVisitableRoom(random);
-			
 			if (!room.IsDoor() && !room.HasKey() && !room.GetCoordinates().equals(pos) && room.GetEnemy() == null) {
 				room.SetEnemy(new Enemy(1 + difficulty / 5, 1 + difficulty / 2, random));
-				i++;
 			}
+			if (reducedEnemies) {
+				reducedEnemies = false;
+				i += difficulty / 2;
+			}
+			i++;
 		}
 
 		GetRoom(doorX, doorY).SetEnemy(new Enemy(3 + difficulty / 5, difficulty, random));
@@ -472,8 +549,8 @@ class CSE110HC {
 
 		print("Copy challenge!");
 		print("\t(Difficulty: " + difficulty + " | Time Limit: " + timeLimit + " seconds)");
-		WaitForEnter();
 		print("Copy the following phrase as quickly as you can! No mistakes!");
+		WaitForEnter();
 		print(choice, 0);
 		double startTime = System.currentTimeMillis() / 1000.0;
 		String answer = scanner.nextLine();
@@ -958,6 +1035,32 @@ class CSE110HC {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Asks the user to input a valid integer after prompting them with a selection
+	 * menu
+	 * 
+	 * @param choices The string list of choices
+	 * @return The valid number inputted by the user
+	 */
+	private int IntInputList(String[] choices) {
+		return IntInputList(choices, 1);
+	}
+
+	/**
+	 * Asks the user to input a valid integer after prompting them with a selection
+	 * menu
+	 * 
+	 * @param choices      The string list of choices
+	 * @param messageSpeed The speed of the print messages
+	 * @return The valid number inputted by the user
+	 */
+	private int IntInputList(String[] choices, int messageSpeed) {
+		for (int i = 0; i < choices.length; i++) {
+			print((i + 1) + ") " + choices[i], messageSpeed);
+		}
+		return IntInput(1, choices.length);
 	}
 
 	/**
