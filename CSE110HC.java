@@ -21,6 +21,7 @@ class CSE110HC {
 	private int dungeonHeight;
 	private int dungeonDepth;
 	private int seed;
+	private static double messageSpeedModifier = 1;
 	// Favors
 	/** Reduces enemies on the next floor */
 	private boolean reducedEnemies = false;
@@ -57,7 +58,8 @@ class CSE110HC {
 		while (true) {
 			switch (status) {
 				case menu:
-					int choice = IntInputList(new String[] { "Start Game", "Set Seed" });
+					print("\n");
+					int choice = IntInputList(new String[] { "Start Game", "Set Seed", "Set Global Text Speed Modifier" });
 					switch (choice) {
 						case 1:
 							print("You descend into the first floor of the dungeon...");
@@ -71,6 +73,10 @@ class CSE110HC {
 						case 2:
 							seed = IntInput("Enter a seed: ");
 							random = new Random(seed);
+							break;
+						case 3:
+							print("Enter a speed modifier from 0 to 1: ", false);
+							messageSpeedModifier = DoubleInput(0, 1);
 							break;
 					}
 					break;
@@ -637,6 +643,9 @@ class CSE110HC {
 					matching = false;
 				}
 			}
+			if(scrambled.length() != answer.length()) {
+				matching = false;
+			}
 		}
 		if (contains && matching && elapse < timeLimit) {
 			print("Good job! (" + elapse + " seconds elapsed)");
@@ -944,7 +953,7 @@ class CSE110HC {
 					delay += 0.3;
 					break;
 			}
-			delay *= speedMod;
+			delay *= speedMod * messageSpeedModifier;
 			WaitForMS((int) (delay * 1000));
 		}
 		if (newLine) {
@@ -1061,6 +1070,40 @@ class CSE110HC {
 			print((i + 1) + ") " + choices[i], messageSpeed);
 		}
 		return IntInput(1, choices.length);
+	}
+
+	/**
+	 * Asks for the user to input a valid double between min and max. Will keep
+	 * asking until provided.
+	 * 
+	 * @param min The minmium value the user is allowed to enter (inclusive)
+	 * @param max The maximum value the user is allowed to enter (inclusive)
+	 * @return The valid number inputted by the user,
+	 */
+	private double DoubleInput(double min, double max) {
+		double r;
+		while (true) {
+			try {
+				r = Double.parseDouble(scanner.nextLine());
+				if (r >= min && r <= max) {
+					return r;
+				} else {
+					throw new Exception();
+				}
+			} catch (Exception e) {
+				boolean lowerBounds = min > Integer.MIN_VALUE;
+				boolean upperBounds = max < Integer.MAX_VALUE;
+				if (lowerBounds && upperBounds) {
+					print("Enter a valid integer between " + min + " and " + max);
+				} else if (lowerBounds) {
+					print("Enter a valid integer above " + min);
+				} else if (upperBounds) {
+					print("Enter a valid integer below " + max);
+				} else {
+					print("Enter a valid integer");
+				}
+			}
+		}
 	}
 
 	/**
