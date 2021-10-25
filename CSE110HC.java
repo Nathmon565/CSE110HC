@@ -117,8 +117,12 @@ class CSE110HC {
 					Player.AddScore(10);
 					Player.AddFavor();
 					status = Status.tavern;
-					print("After felling the beast, you return to the tavern to recover.");
-					// TODO if all enemies clear on dungeon, add an extra favor
+					print("After felling the beast, you return to the tavern to recover. (+1 favor)");
+					if (IsDungeonClear()) {
+						print("The tavernkeep is impressed by our handiwork at clearing the dungeon completely! (+1 favor)");
+						Player.AddScore(5);
+						Player.AddFavor();
+					}
 				} else {
 					Player.AddScore(3);
 					status = Status.dungeon;
@@ -187,6 +191,20 @@ class CSE110HC {
 				status = Status.menu;
 			}
 		}
+	}
+
+	/**
+	 * @return Whether the entire current dungeon was explored.
+	 */
+	private boolean IsDungeonClear() {
+		for (Room[] rooms : dungeonFloor) {
+			for (Room room : rooms) {
+				if (room.IsVisitable() && !room.IsVisited()) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	private void ResetGame() {
