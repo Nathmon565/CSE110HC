@@ -1,0 +1,7 @@
+{
+  "java.project.referencedLibraries": [
+    "lib/**/*.jar",
+    "tinysound-1.1.1.jar",
+    "sounds/tinysound-1.1.1.jar"
+  ]
+}
