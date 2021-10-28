@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
 import kuusisto.tinysound.TinySound;
-import kuusisto.tinysound.Sound;
 import kuusisto.tinysound.Music;
 
 class CSE110HC {
@@ -794,29 +793,6 @@ class CSE110HC {
 	}
 
 	/**
-	 * Move the player in a certain direction, updating the map and entering the new
-	 * room.
-	 * 
-	 * @param direction 0 - up, 1 - right, 2 - down, 3 - left
-	 * @return Whether the move was valid or not
-	 */
-	private boolean MoveRooms(int direction) {
-		return MoveTo(Vector2.Sum(Player.GetPos(), RelativeOffset(direction)));
-	}
-
-	/**
-	 * Forces the player to move to coord, and does the according action, along with
-	 * revealing nearby grids.
-	 * 
-	 * @param x The x coordinate to move to
-	 * @param y The y coordinate to move to
-	 * @return Whether the move is legal or not
-	 */
-	private boolean MoveTo(int x, int y) {
-		return MoveTo(new Vector2(x, y));
-	}
-
-	/**
 	 * Forces the player to move to coord, and does the according action, along with
 	 * revealing nearby grids.
 	 * 
@@ -1080,36 +1056,6 @@ class CSE110HC {
 	private int IntInput(String message) {
 		print(message, false);
 		return IntInput();
-	}
-
-	/**
-	 * Asks for the user to input a valid integer between min and max after printing
-	 * a message. Will keep asking until provided.
-	 * 
-	 * @param message The string message to print before receiving input
-	 * @param min     The minmium value the user is allowed to enter (inclusive)
-	 * @param max     The maximum value the user is allowed to enter (inclusive)
-	 * @return The valid number inputted by the user,
-	 */
-	private int IntInput(String message, int min, int max) {
-		return IntInput(message, 1, min, max);
-	}
-
-	/**
-	 * Asks for the user to input a valid integer between min and max after printing
-	 * a message. Will keep asking until provided.
-	 * 
-	 * @param message      The string message to print before receiving input
-	 * @param messageSpeed The speed modifier of the message
-	 * @param min          The minmium value the user is allowed to enter
-	 *                     (inclusive)
-	 * @param max          The maximum value the user is allowed to enter
-	 *                     (inclusive)
-	 * @return The valid number inputted by the user,
-	 */
-	private int IntInput(String message, int messageSpeed, int min, int max) {
-		print(message, messageSpeed, false);
-		return IntInput(min, max);
 	}
 
 	/**
