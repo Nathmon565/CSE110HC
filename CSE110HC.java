@@ -24,12 +24,14 @@ class CSE110HC {
 	private int dungeonDepth;
 	private int seed;
 	private Random random;
-  private static double difficulty = 1;
+	private static double difficulty = 1;
 	private static double messageSpeedModifier = 1;
 	// Favors
 	/** Reduces enemies on the next floor */
 	private boolean reducedEnemies = false;
 	private Scanner scanner;
+
+	private TutorialHandler tutorial;
 
 	// Audio
 	private Music dungeonAmbiance;
@@ -60,16 +62,22 @@ class CSE110HC {
 		fightMusic = TinySound.loadMusic("/sounds/music/battle.wav");
 
 		print("Welcome to the dungeon!");
+		print("Version 1.0");
 
 		while (true) {
 			switch (status) {
 			case menu:
 				print("\n");
-				int choice = IntInputList(new String[] { "Start Game", "Set Seed", "Set difficulty", "Set Global Text Speed Modifier" }, 0);
+				int choice = IntInputList(new String[] { "Start Game", "Set Seed", "Set Difficulty",
+						"Set Global Text Speed Modifier", "Enable Tutorial" }, 0);
 				switch (choice) {
 				case 1:
+					if (tutorial == null) {
+						tutorial = new TutorialHandler(false);
+					}
 					TinySound.loadSound("/sounds/effects/door_open.wav").play();
 					print("You descend into the first floor of the dungeon...");
+					tutorial.PrintTutorial(TutorialHandler.Tutorials.dungeonFloor);
 					dungeonAmbiance.play(true);
 					dungeonWidth = 4 + random.nextInt(4);
 					dungeonHeight = 3 + random.nextInt(2);
@@ -82,25 +90,28 @@ class CSE110HC {
 					seed = IntInput("Enter a seed: ");
 					random = new Random(seed);
 					break;
-        case 3:
-          print("Enter a difficulty");
-          int diff = IntInputList(new String[] {"Casual", "Default", "Challenging"}, 0);
-          switch(diff) {
-            case 1:
-              CSE110HC.SetDifficulty(0.5);
-              break;
-            case 2:
-              CSE110HC.SetDifficulty(1);
-              break;
-            case 3:
-              CSE110HC.SetDifficulty(1.5);
-              break;
-          }
-          break;
+				case 3:
+					print("Enter a difficulty");
+					int diff = IntInputList(new String[] { "Casual", "Default", "Challenging" }, 0);
+					switch (diff) {
+					case 1:
+						CSE110HC.SetDifficulty(0.5);
+						break;
+					case 2:
+						CSE110HC.SetDifficulty(1);
+						break;
+					case 3:
+						CSE110HC.SetDifficulty(1.5);
+						break;
+					}
+					break;
 				case 4:
 					print("Enter a speed modifier from 0 to 1: ", false);
 					messageSpeedModifier = DoubleInput(0, 1);
 					break;
+				case 5:
+					print("Tutorial enabled!");
+					tutorial = new TutorialHandler(true);
 				}
 				break;
 			case dungeon:
@@ -132,7 +143,7 @@ class CSE110HC {
 							Player.GetPlayer().DealDamage(1);
 							TinySound.loadSound("/sounds/effects/hit_player.wav").play();
 							print("You have " + Player.GetPlayer().GetHealth() + " health remaining!");
-							if(Player.GetPlayer().GetHealth() == 1) {
+							if (Player.GetPlayer().GetHealth() == 1) {
 								TinySound.loadSound("/sounds/effects/health_warning.wav").play();
 							}
 						}
@@ -159,7 +170,7 @@ class CSE110HC {
 					Player.AddFavor();
 					status = Status.tavern;
 					TinySound.loadSound("/sounds/effects/defeat_boss.wav").play();
-					print("You have successfully defeated the boss! The stairs are now clear!");
+					print("You have successfully defeated the boss of this floor! The stairs to the tavern are now clear!");
 					TinySound.loadSound("/sounds/effects/door_close.wav").play();
 					print("After felling the beast, you return to the tavern to recover.\n(+1 favor)");
 					tavernAmbiance.play(true);
@@ -175,6 +186,7 @@ class CSE110HC {
 						Player.AddScore(2);
 						print("You give the now innate map back to the tavernkeep.\n(+1 favor)");
 					}
+					tutorial.PrintTutorial(TutorialHandler.Tutorials.tavern);
 				} else {
 					TinySound.loadSound("/sounds/effects/defeat_enemy.wav").play();
 					Player.AddScore(3);
@@ -192,6 +204,7 @@ class CSE110HC {
 					tavernAmbiance.stop();
 					tavernMusic.stop();
 					TinySound.loadSound("/sounds/effects/door_open.wav").play();
+					tutorial.PrintTutorial(TutorialHandler.Tutorials.nextFloor);
 					EnterNextDungeon(random);
 					break;
 				case 2:
@@ -200,6 +213,7 @@ class CSE110HC {
 						TinySound.loadSound("/sounds/effects/walk.wav").play();
 						print("You redeem an extermination team to thin out the enemies of the next floor");
 						reducedEnemies = true;
+						tutorial.PrintTutorial(TutorialHandler.Tutorials.favor);
 					} else if (favors < 1) {
 						TinySound.loadSound("/sounds/effects/redeem_error.wav").play();
 						print("You don't have enough favors to redeem this item.");
@@ -214,6 +228,7 @@ class CSE110HC {
 						TinySound.loadSound("/sounds/effects/redeem_armor.wav").play();
 						print("You redeem a powerful, but brittle, set of armor.");
 						Player.SetSecondWind(true);
+						tutorial.PrintTutorial(TutorialHandler.Tutorials.favor);
 					} else if (favors < 1) {
 						TinySound.loadSound("/sounds/effects/redeem_error.wav").play();
 						print("You don't have enough favors to redeem this item.");
@@ -228,6 +243,7 @@ class CSE110HC {
 						TinySound.loadSound("/sounds/effects/redeem_key.wav").play();
 						print("You redeem a blank key with the handle in the shape of a skull.");
 						Player.SetSkeletonKey(true);
+						tutorial.PrintTutorial(TutorialHandler.Tutorials.favor);
 					} else if (favors < 2) {
 						TinySound.loadSound("/sounds/effects/redeem_error.wav").play();
 						print("You don't have enough favors to redeem this item.");
@@ -242,6 +258,7 @@ class CSE110HC {
 						TinySound.loadSound("/sounds/effects/redeem_map.wav").play();
 						print("You redeem an old, blank sheet of parchment which gives you the chills.");
 						Player.SetDungeonMap(true);
+						tutorial.PrintTutorial(TutorialHandler.Tutorials.favor);
 					} else if (favors < 3) {
 						TinySound.loadSound("/sounds/effects/redeem_error.wav").play();
 						print("You don't have enough favors to redeem this item.");
@@ -254,14 +271,15 @@ class CSE110HC {
 				break;
 			}
 			if (Player.GetPlayer().GetHealth() < 1) {
-				print("You died! Score: " + Round(Player.GetScore()) + "\nSeed: " + seed + "\nDifficulty: " + CSE110HC.GetDifficulty());
+				print("You died! Score: " + Round(Player.GetScore()) + "\nSeed: " + seed + "\nDifficulty: "
+						+ CSE110HC.GetDifficulty());
 				ResetGame();
 				status = Status.menu;
 			}
 		}
 	}
 
-  /**
+	/**
 	 * @return Whether the entire current dungeon was explored.
 	 */
 	private boolean IsDungeonClear() {
@@ -328,7 +346,7 @@ class CSE110HC {
 		int keyX = -1, keyY = -1;
 		int doorX = -1, doorY = -1;
 		int strtX = -1, strtY = -1;
-    difficulty *= CSE110HC.GetDifficulty();
+		difficulty *= CSE110HC.GetDifficulty();
 
 		// Generate key and door positions
 		while (!InBounds(keyX, keyY)) {
@@ -531,27 +549,27 @@ class CSE110HC {
 		String op;
 		int opNum = random.nextInt(3);
 		double timeLimit = 10 - ((5.0 * budget) / (budget + 10.0));
-		
+
 		int firstNum = random.nextInt(Round(budget * (1 + random.nextInt(5)))) + 1;
 		int secondNum = random.nextInt(Round(budget * (1 + random.nextInt(5)))) + 1;
-		switch(opNum) {
-			case 0:
+		switch (opNum) {
+		case 0:
 			answer = firstNum + secondNum;
 			op = "+";
 			break;
-			case 1:
+		case 1:
 			answer = firstNum - secondNum;
 			op = "-";
 			break;
-			default:
+		default:
 			answer = firstNum * secondNum;
 			op = "*";
 			timeLimit *= Math.min(firstNum, secondNum) / 2.0;
-      if(firstNum == 10 || secondNum == 10) {
-        timeLimit = 5;
-      }
+			if (firstNum == 10 || secondNum == 10) {
+				timeLimit = 5;
+			}
 			break;
-			
+
 		}
 		timeLimit = Round(timeLimit, 2);
 
@@ -564,7 +582,7 @@ class CSE110HC {
 		double elapse = Round(endTime - startTime, 1);
 		double guess;
 		try {
-			guess = Round(Double.parseDouble(guessString),2);
+			guess = Round(Double.parseDouble(guessString), 2);
 		} catch (Exception e) {
 			TinySound.loadSound("/sounds/effects/challenge_failure.wav").play();
 			print("That's not a valid answer!");
@@ -651,10 +669,12 @@ class CSE110HC {
 		int wordLen = 4;
 		double timeLimit = 10;
 		budget -= 4;
-		for(int i = 0; i < 5; i++) {
-			if(budget < 1) { break; }
-			
-			if(wordLen < 6 && random.nextDouble() > 0.90f) {
+		for (int i = 0; i < 5; i++) {
+			if (budget < 1) {
+				break;
+			}
+
+			if (wordLen < 6 && random.nextDouble() > 0.90f) {
 				wordLen++;
 				budget--;
 				timeLimit += 10;
@@ -665,7 +685,7 @@ class CSE110HC {
 		if (timeLimit < 5) {
 			timeLimit = 5;
 		}
-    timeLimit = Round(timeLimit, 2);
+		timeLimit = Round(timeLimit, 2);
 
 		String choice = null;
 		for (int i = 0; i < 1000; i++) {
@@ -809,6 +829,7 @@ class CSE110HC {
 		}
 		if (room.IsDoor()) {
 			boolean flag = false;
+			tutorial.PrintTutorial(TutorialHandler.Tutorials.lockedDoor);
 			if (!Player.HasKey() && !Player.HasSkeletonKey()) {
 				TinySound.loadSound("/sounds/effects/door_locked.wav").play();
 				if (!room.IsVisited()) {
@@ -838,13 +859,13 @@ class CSE110HC {
 					}
 				}
 				if (flag) {
+					tutorial.PrintTutorial(TutorialHandler.Tutorials.boss);
 					if (room.GetEnemy().GetName().equals("Giant Spider")) {
 						bossMusic = TinySound.loadMusic("/sounds/music/battle_boss_spider.wav");
 					} else {
 						bossMusic = TinySound.loadMusic("/sounds/music/battle_boss.wav");
 					}
 					bossMusic.play(true);
-					print("Boss Fight time!");
 					print("There's an enemy " + room.GetEnemy().GetName() + " defending the stairs!");
 					status = Status.combat;
 				}
@@ -853,13 +874,16 @@ class CSE110HC {
 			if (!Player.HasKey()) {
 				Player.SetHasKey(true);
 				TinySound.loadSound("/sounds/effects/key_pickup.wav").play();
+				tutorial.PrintTutorial(TutorialHandler.Tutorials.key);
 				print("Key collected!");
 			}
 		} else if (room.GetEnemy() != null) {
 			fightMusic.play(true);
+			tutorial.PrintTutorial(TutorialHandler.Tutorials.enemy);
 			print("There's an enemy " + room.GetEnemy().GetName() + " here!");
 			status = Status.combat;
 		} else if (room.GetReduced()) {
+			tutorial.PrintTutorial(TutorialHandler.Tutorials.reducedEnemy);
 			print("You see the remains of what once was a monster.");
 			room.SetReduced(false);
 		}
@@ -1152,14 +1176,15 @@ class CSE110HC {
 		}
 	}
 
-  /**
-   * Rounds a double to an int
-   * @param input The unrounded double
-   * @return The rounded integer
-   */
-  private int Round(double input) {
-    return (int)Math.round(input);
-  }
+	/**
+	 * Rounds a double to an int
+	 * 
+	 * @param input The unrounded double
+	 * @return The rounded integer
+	 */
+	private int Round(double input) {
+		return (int) Math.round(input);
+	}
 
 	/**
 	 * Rounds a double to a certain number of decimal places.
@@ -1198,13 +1223,13 @@ class CSE110HC {
 		}
 	}
 
-  public static double GetDifficulty() {
-    return difficulty;
-  }
+	public static double GetDifficulty() {
+		return difficulty;
+	}
 
-  private static void SetDifficulty(double diff) {
-    difficulty = diff;
-  }
+	private static void SetDifficulty(double diff) {
+		difficulty = diff;
+	}
 }
 
 /**
@@ -1593,8 +1618,8 @@ class Player extends Entity {
 	}
 
 	public static boolean HasSecondWind() {
-    return player.secondWind;
-  }
+		return player.secondWind;
+	}
 
 	public static boolean HasSkeletonKey() {
 		return player.skeletonKey;
@@ -1624,4 +1649,85 @@ class Player extends Entity {
 		player.hasKey = state;
 	}
 
+}
+
+/** Handles displaying of tutorials when called in-game */
+class TutorialHandler {
+	public enum Tutorials {
+		dungeonFloor, key, lockedDoor, enemy, boss, tavern, favor, nextFloor, reducedEnemy
+	};
+
+	private boolean[] tutorials;
+
+	/**
+	 * @param enabled Whether the tutorial system is enabled or not
+	 */
+	public TutorialHandler(boolean enabled) {
+		tutorials = new boolean[Tutorials.values().length];
+		for (int i = 0; i < tutorials.length; i++) {
+			tutorials[i] = enabled;
+		}
+	}
+
+	/**
+	 * Prints the tutorial message of tutorial if its true, setting its value to
+	 * false
+	 * 
+	 * @param tutorial The tutorial segment to check and display
+	 */
+	public void PrintTutorial(Tutorials tutorial) {
+		if (!CheckAndSet(tutorial)) {
+			return;
+		}
+		switch (tutorial) {
+		case dungeonFloor:
+			CSE110HC.print(
+					"Welcome to the dungeon!\nThe goal of the game is to get as deep in the dungeon as possible, accumulating the highest score you can. You get score by doing actions in the game: defeating monsters, discovering new floors, etc.\nTo start every floor is the dungeon itself. Here's a key to explain what the symbols mean:\n\t@ = your location\n\t0 = an explored room\n\tO = an unexplored room\n\t? = an unknown part of the dungeon\n\t% = the key\n\t# = the locked door\n\t- = a solid wall\n\nBegin traversing the dungeon floor, find the key, and get to the door! Good luck!");
+			break;
+		case key:
+			CSE110HC.print(
+					"You found a key! There is one key per floor, these keys do not stack and do not carry over to the next floor. They key is able to unlock the locked door somewhere else in this dungeon...");
+			break;
+		case lockedDoor:
+			CSE110HC.print(
+					"You found the locked door! If you don't have the key, you should keep exploring. If you do have the key, you can unlock the door and exit the dungeon floor. However, be careful, there's always a strong enemy guarding the way home, and once you decide to fight it, there's no way back into the dungeon!");
+			break;
+		case enemy:
+			CSE110HC.print(
+					"You found an enemy! Combat in this game isn't standard \"hit for 2 damage\", instead it's skill and time based. You will be prompted with a problem (transcription, math, or unscrambling) that you will have to solve before time runs out. If you make a mistake or take too long, you take damage (and you can't heal!)\nSo, be careful, don't make mistakes, and keep calm...");
+			break;
+		case boss:
+			CSE110HC.print(
+					"So you decided to open the door! At the end of each floor is a boss fight, a super strong enemy which prevents you from getting back to the tavern. The boss fight works the same way as a standard enemy, only they're strong and have more difficult challenges. Good luck!");
+			break;
+		case tavern:
+			CSE110HC.print(
+					"You should take a break, you've earned it! Once you defeat the final boss fight, you return to the tavern where you can take a second and relax. As you complete dungeons, you'll receive favors, which you can redeem for goodies and treasures which will help you clear out even more dungeons. Take your time here, as once you leave the tavern, you're stuck in the dungeon until you defeat the next boss!");
+			break;
+		case favor:
+			CSE110HC.print(
+					"You've redeemed a favor! Favors are one-time use items that will help you in your journey. They range from thinning the number of enemies on the next floor to a strange map which will reveal the next dungeon's floor. These favors cannot stack, but are powerful and essential in getting to the deeper depths of the dungeon...");
+			break;
+		case nextFloor:
+			CSE110HC.print(
+					"You've entered the next floor of the dungeon! As you get deeper, difficulty will increase... good luck!");
+			break;
+		case reducedEnemy:
+			CSE110HC.print(
+					"Occasionally, after hiring an extermination team, you may find their handiwork on the next floor. You should buy them a round when you return as thanks.");
+			break;
+		}
+	}
+
+	/**
+	 * Sets the value of the tutorial to false, returns what it was before setting
+	 * 
+	 * @param tut The tutorial value to check
+	 * @return Whether the tutorial was available before
+	 */
+	private boolean CheckAndSet(Tutorials tut) {
+		boolean s = tutorials[tut.ordinal()];
+		tutorials[tut.ordinal()] = false;
+		return s;
+	}
 }
